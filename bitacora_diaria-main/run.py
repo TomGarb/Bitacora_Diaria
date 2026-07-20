@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 # --- IMPORTACIONES ---
 from app.database import engine
 from app.models.shift import Base
-from app.config import KEYCLOAK_SERVER_URL, KEYCLOAK_REALM, KEYCLOAK_CLIENT_ID, KEYCLOAK_CLIENT_SECRET
+from app.config import KEYCLOAK_SERVER_URL, KEYCLOAK_REALM, KEYCLOAK_CLIENT_ID, KEYCLOAK_CLIENT_SECRET, REDIRECT_URI
 from app.auth import NotAuthenticatedException
 from app.routes import shift, cases, activities, accesses, credentials, extra_tasks, notes, history, master_data, operations, external_cases, metrics
 
@@ -34,7 +34,6 @@ app.include_router(metrics.router)
 KC_BASE = f"{KEYCLOAK_SERVER_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect"
 AUTHORIZATION_URL = f"{KC_BASE}/auth"
 TOKEN_URL = f"{KC_BASE}/token"
-REDIRECT_URI = "https://bitacora-diaria.ctldocbaires.com/callback"
 
 # --- RUTAS DE AUTENTICACIÓN ---
 @app.exception_handler(NotAuthenticatedException)

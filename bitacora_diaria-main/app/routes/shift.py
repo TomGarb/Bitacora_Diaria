@@ -11,6 +11,7 @@ import httpx
 import logging
 from fastapi import APIRouter, Depends, BackgroundTasks     
 from app.database import get_db
+from app.config import TURBOSMTP_CONSUMER_KEY, TURBOSMTP_CONSUMER_SECRET, TEAMS_WEBHOOK_URL
 # Importamos TODOS los modelos, incluyendo Note
 from app.models.shift import Case, Activity, Access, Credential, ExtraTask, Note, SentReport
 from datetime import datetime, time, timedelta
@@ -173,8 +174,6 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 # ==========================================
 # MÓDULO DE FEEDBACK Y MENSAJERÍA
 # ==========================================
-UPLOAD_DIR = "app/static/uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @router.post("/api/feedback")
 async def submit_feedback(
@@ -265,7 +264,7 @@ async def send_teams_notification(task_type: str, title: str, observations: str,
     """Envía un mensaje asincrónico a un canal de Teams."""
     
     # Reemplaza esto por la URL real que te dio Teams
-    TEAMS_WEBHOOK_URL = "https://default0abdd59413d3401ea70419830f19e8.88.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/03/workflows/e8aba3cc890c44f1aa20fe0ea7472b9f/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=MDxWEsPjh5WSJvIdZyei9BuLKzILFT41W9vW6pK8xCA" 
+    webhook_url = TEAMS_WEBHOOK_URL 
     
     # Armamos el mensaje con formato Markdown básico soportado por Teams
     mensaje = (
@@ -283,7 +282,7 @@ async def send_teams_notification(task_type: str, title: str, observations: str,
     try:
         # Usamos httpx para no bloquear FastAPI, igual que hicimos con los correos
         async with httpx.AsyncClient() as client:
-            response = await client.post(TEAMS_WEBHOOK_URL, json=payload, timeout=10.0)
+            response = await client.post(webhook_url, json=payload, timeout=10.0)
             
             if response.status_code in (200, 201, 202):
                 print("✅ [TEAMS] Notificación enviada con éxito.", flush=True)
@@ -377,8 +376,8 @@ async def send_turbosmtp_email_async(subject: str, html_content: str, from_email
         headers = {
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "consumerKey": "b0f6b0e563edc3de6d1e",
-            "consumerSecret": "pzasQA0Pt9f3XgJCm5oY"
+            "consumerKey": TURBOSMTP_CONSUMER_KEY,
+            "consumerSecret": TURBOSMTP_CONSUMER_SECRET
         }
         
         async with httpx.AsyncClient() as client:
