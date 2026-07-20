@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Notas - Datacenter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body>
+    <header class="navbar">
+        <h1>Notas del Turno</h1>
+    </header>
+
+    <main class="container two-columns">
+        <section class="form-section">
+            <h2 id="form-title">Nueva Nota</h2>
+            <form id="note-form">
+                <input type="hidden" id="note-id">
+                
+                <div class="form-group">
+                    <label>Título de la Nota:</label>
+                    <input type="text" id="title" required placeholder="Ej. Revisar aire acondicionado sala B">
+                </div>
+
+                <div class="form-group">
+                    <label>Prioridad:</label>
+                    <select id="priority" required>
+                        <option value="Alta">Alta</option>
+                        <option value="Media" selected>Media</option>
+                        <option value="Baja">Baja</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Observaciones / Detalle:</label>
+                    <textarea id="observations" rows="5" required placeholder="Escribe el contenido de la nota aquí..."></textarea>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">Guardar Nota</button>
+                    <button type="button" id="btn-cancel-edit" class="btn-secondary hidden">Cancelar Edición</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="list-section">
+            <h2>Notas Activas (Últimas 24h)</h2>
+            <div class="table-container">
+                <table id="notes-table">
+                    <thead>
+                        <tr>
+                            <th>Hora</th>
+                            <th>Información</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="notes-body">
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+    <script src="/static/js/utils.js"></script>
+    <script src="/static/js/theme.js"></script>
+    <script src="/static/js/notes_manager.js"></script>
+</body>
+</html>

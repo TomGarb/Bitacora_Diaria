@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indicadores y Métricas de Turno</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .metrics-wrapper { padding: 20px; max-width: 1400px; margin: 0 auto; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+        .chart-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        .chart-card h3 { color: #0f172a; margin-top: 0; margin-bottom: 15px; font-size: 1rem; text-align: center; font-weight: 600; }
+        canvas { max-height: 300px; }
+        
+        /* Loading Overlay */
+        #loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.85); z-index: 9999; align-items: center; justify-content: center; flex-direction: column; color: white; backdrop-filter: blur(4px); }
+        .spinner { border: 6px solid rgba(255, 255, 255, 0.3); border-top: 6px solid #3b82f6; border-radius: 50%; width: 60px; height: 60px; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Toast Seguro Integrado */
+        #toast-seguro { visibility: hidden; min-width: 250px; background-color: #333; color: #fff; text-align: center; border-radius: 8px; padding: 16px; position: fixed; z-index: 10000; left: 50%; transform: translateX(-50%); bottom: 30px; font-weight: bold; box-shadow: 0px 4px 10px rgba(0,0,0,0.3); opacity: 0; transition: opacity 0.5s, bottom 0.5s; }
+        #toast-seguro.show { visibility: visible; opacity: 1; bottom: 50px; }
+        #toast-seguro.success { background-color: #10b981; }
+        #toast-seguro.error { background-color: #ef4444; }
+
+        /* Modal de Edición */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+        .modal-content { background-color: #fff; padding: 25px; border-radius: 8px; width: 600px; max-width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .edit-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; margin-bottom: 10px; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px; }
+        .edit-grid input { width: 100%; padding: 5px; border: 1px solid #cbd5e1; border-radius: 4px; text-align: right; }
+    </style>
+</head>
+<body style="background-color: #f8fafc;">
+    
+    <div id="loading-overlay"><div class="spinner"></div><h2 style="margin: 0; color: white;">Procesando...</h2></div>
+    
+    <div id="toast-seguro">Mensaje aquí</div>
+
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <h2 style="margin-top:0; color: #0f172a;">Editar Tiempos del Turno</h2>
+            <input type="hidden" id="edit-record-id">
+            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; font-weight: bold; margin-bottom: 10px; color: #64748b;">
+                <div>Categoría</div><div>Cantidades (uds)</div><div>Tiempo (min)</div>
+            </div>
+            <div id="edit-form-container">
+                </div>
+            <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="cerrarModal()" class="btn-secondary" style="background:#64748b; color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer;">Cancelar</button>
+                <button type="button" onclick="guardarEdicion()" class="btn-primary" style="background:#3b82f6; color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer;">💾 Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+
+    <header class="top-bar">
+        <div class="top-date">📅 <span id="current-date">Cargando fecha...</span></div>
+        <div onclick="openSupportCenter()" style="position: relative; cursor: pointer; margin-right: 20px; font-size: 1.5rem;" title="Centro de Soporte">
+            🔔 <span id="bell-badge" style="position: absolute; top: -5px; right: -10px; background: #ef4444; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.7rem; font-weight: bold; display: none;">0</span>
+        </div>
+        <nav class="nav-links-modern">
+            <a href="/shift/">🏠 Dashboard</a>
+            <a href="/operations/">⚙️ Operaciones</a>
+            <a href="/history/">📜 Histórico</a>
+            <a href="/master-data/">🗄️ Datos Maestros</a>
+            <a href="/metrics/" class="tab-btn">📊 Métricas</a>
+            <a href="#" onclick="toggleTheme(event)" class="theme-toggle-icon" style="background: transparent; border: 1px solid currentColor; margin-left: 15px;">🌙 Modo Oscuro</a>
+        </nav>
+    
+        <div class="top-user" style="display: flex; align-items: center; gap: 15px;">
+            <span><strong>Operador:</strong> {{ user_name }}</span>
+            
+            <a href="/logout" style="color: #ef4444; text-decoration: none; font-size: 0.9em; border: 1px solid #ef4444; padding: 4px 8px; border-radius: 4px;" title="Cerrar sesión">
+                🚪 Salir
+            </a>
+        </div>
+    </header>
+
+    <div class="metrics-wrapper">
+        
+        <div style="background: white; padding: 15px 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="margin: 0; color: #0f172a; font-size: 1.2rem;">📊 Panel de Control Analítico</h2>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <a href="/metrics/export/excel" class="btn-primary" style="text-decoration: none; background: #10b981;">📥 Exportar (.xlsx)</a>
+                <input type="file" id="file-import" accept=".xlsx, .xls" style="display: none;" onchange="importarExcel(event)">
+                <button onclick="document.getElementById('file-import').click()" class="btn-primary" style="background: #3b82f6; border: none; cursor: pointer; color: white; padding: 10px 15px; border-radius: 5px; margin-left: 10px;">📤 Importar Histórico</button>
+                <button onclick="deshacerImportacion()" class="btn-primary" style="background: #ef4444; border: none; cursor: pointer; color: white; padding: 10px 15px; border-radius: 5px; margin-left: 10px;">⚠️ Deshacer Importación</button>
+                <label style="font-weight: bold; color: #64748b;">Filtrar Vista:</label>
+                <select id="global-shift-filter" onchange="aplicarFiltroTurno()" style="padding: 8px 15px; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: bold; color: #0f172a; background: #f8fafc; cursor: pointer;">
+                    <option value="Todos">🌐 Todos los Turnos (Consolidado)</option>
+                    <option value="Mañana">🌅 Mañana</option>
+                    <option value="Tarde">🌇 Tarde</option>
+                    <option value="Noche">🌃 Noche</option>
+                    <option value="Central">🏢 Central</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="chart-card"><h3>🎯 Productividad: Real vs Meta</h3><canvas id="chart-prod"></canvas></div>
+            <div class="chart-card"><h3>⚖️ Distribución de Tiempos</h3><canvas id="chart-dist"></canvas></div>
+        </div>
+        <div class="grid-3">
+            <div class="chart-card"><h3>⚔️ A100 vs Otros (Volumen)</h3><canvas id="chart-a100-vs"></canvas></div>
+            <div class="chart-card"><h3>🔍 Desglose Tareas A100</h3><canvas id="chart-a100-desglose"></canvas></div>
+            <div class="chart-card"><h3>📅 Ritmo Semanal de Carga</h3><canvas id="chart-ritmo"></canvas></div>
+        </div>
+        <div class="grid-3">
+            <div class="chart-card"><h3>⚡ Eficiencia: Volumen vs Tiempo</h3><canvas id="chart-efi"></canvas></div>
+            <div class="chart-card"><h3>🔋 Ocupación vs Disponibilidad</h3><canvas id="chart-ocup"></canvas></div>
+            <div class="chart-card"><h3>🏖️ Semana vs Fin de Semana</h3><canvas id="chart-finde"></canvas></div>
+        </div>
+
+    <script>
+        // LISTA DE CATEGORÍAS PARA GENERAR EL FORMULARIO
+        const categories = [
+            { id: 'sh_aws', name: 'SH AWS' }, { id: 'sh', name: 'SH' }, { id: 'rh', name: 'RH' },
+            { id: 'inout', name: 'IN/OUT' }, { id: 'inc', name: 'Incidentes' }, { id: 'inc_aws', name: 'Alarmas AWS' },
+            { id: 'calls', name: 'Calls' }, { id: 'mails', name: 'Mails' }, { id: 'td', name: 'Tareas Diarias' },
+            { id: 'acc', name: 'Accesos / Escoltar' }, { id: 'trad', name: 'Traducción Sectores' }, { id: 'pta', name: 'Asistencia Puerta' },
+            { id: 'mop', name: 'MOP / Seguimiento' }, { id: 'abm', name: 'ABM Equipos' }, { id: 'eti', name: 'ABM Etiquetas' },
+            { id: 'chi', name: 'Llamadas Chile' }, { id: 'mia', name: 'Llamadas Miami' }, { id: 'te', name: 'Tareas Extra' }
+        ];
+
+        document.addEventListener("DOMContentLoaded", () => {
+            loadAnalytics();
+            generarFormularioEdicion();
+        });
+
+        // 1. FUNCIÓN TOAST GARANTIZADA
+        function mostrarMensaje(texto, tipo) {
+            const toast = document.getElementById("toast-seguro");
+            toast.textContent = texto;
+            toast.className = "show " + tipo;
+            setTimeout(() => { toast.className = toast.className.replace("show " + tipo, ""); }, 3000);
+        }
+
+        // 2. GENERADOR DEL FORMULARIO DE EDICIÓN
+        function generarFormularioEdicion() {
+            const container = document.getElementById('edit-form-container');
+            let html = '';
+            categories.forEach(cat => {
+                html += `
+                <div class="edit-grid">
+                    <label>${cat.name}</label>
+                    <input type="number" id="edit_${cat.id}_c" min="0" placeholder="Cant">
+                    <input type="number" id="edit_${cat.id}_t" min="0" placeholder="Minutos">
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        // 3. ABRIR MODAL Y CARGAR DATOS
+        async function abrirModalEdicion(id) {
+            try {
+                const res = await fetch(`/metrics/api/${id}`);
+                const data = await res.json();
+                document.getElementById('edit-record-id').value = id;
+                
+                categories.forEach(cat => {
+                    document.getElementById(`edit_${cat.id}_c`).value = data[`${cat.id}_c`] || 0;
+                    document.getElementById(`edit_${cat.id}_t`).value = data[`${cat.id}_t`] || 0;
+                });
+                
+                document.getElementById('editModal').style.display = 'flex';
+            } catch (e) {
+                mostrarMensaje("Error al cargar los datos del registro", "error");
+            }
+        }
+
+        function cerrarModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        // 4. GUARDAR EDICIÓN
+        async function guardarEdicion() {
+            const id = document.getElementById('edit-record-id').value;
+            const payload = {};
+            
+            categories.forEach(cat => {
+                payload[`${cat.id}_c`] = parseInt(document.getElementById(`edit_${cat.id}_c`).value) || 0;
+                payload[`${cat.id}_t`] = parseInt(document.getElementById(`edit_${cat.id}_t`).value) || 0;
+            });
+
+            document.getElementById('loading-overlay').style.display = 'flex';
+
+            try {
+                const res = await fetch(`/metrics/api/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if(res.ok) {
+                    mostrarMensaje("Registro actualizado", "success");
+                    cerrarModal();
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    mostrarMensaje("Error al guardar", "error");
+                    document.getElementById('loading-overlay').style.display = 'none';
+                }
+            } catch (e) {
+                mostrarMensaje("Fallo de red", "error");
+                document.getElementById('loading-overlay').style.display = 'none';
+            }
+        }
+
+        // 5. ELIMINAR REGISTRO INDIVIDUAL
+        async function eliminarRegistro(id) {
+            if(!confirm("¿Estás seguro de que deseas eliminar permanentemente este registro de métricas?")) return;
+            
+            document.getElementById('loading-overlay').style.display = 'flex';
+            try {
+                const res = await fetch(`/metrics/api/${id}`, { method: 'DELETE' });
+                if(res.ok) {
+                    mostrarMensaje("Registro eliminado", "success");
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    mostrarMensaje("Error al eliminar", "error");
+                    document.getElementById('loading-overlay').style.display = 'none';
+                }
+            } catch(e) {
+                mostrarMensaje("Fallo de red", "error");
+                document.getElementById('loading-overlay').style.display = 'none';
+            }
+        }
+
+        // 6. LAS FUNCIONES DE IMPORTACIÓN ACTUALIZADAS PARA USAR EL TOAST SEGURO
+        async function importarExcel(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            document.getElementById('loading-overlay').style.display = 'flex';
+            const formData = new FormData(); formData.append("file", file);
+            try {
+                const response = await fetch("/metrics/import/excel", { method: "POST", body: formData });
+                const result = await response.json();
+                document.getElementById('loading-overlay').style.display = 'none';
+                if (response.ok) {
+                    mostrarMensaje(result.mensaje, "success");
+                    setTimeout(() => location.reload(), 2000); 
+                } else { mostrarMensaje(result.detalle || "Error", "error"); }
+            } catch (error) {
+                document.getElementById('loading-overlay').style.display = 'none';
+                mostrarMensaje("Error de conexión.", "error");
+            }
+            event.target.value = '';
+        }
+
+        async function deshacerImportacion() {
+            if (!confirm("¿Eliminar TODOS los datos masivos importados?")) return;
+            document.getElementById('loading-overlay').style.display = 'flex';
+            try {
+                const response = await fetch("/metrics/import/rollback", { method: "DELETE" });
+                const result = await response.json();
+                document.getElementById('loading-overlay').style.display = 'none';
+                if (response.ok) {
+                    mostrarMensaje(result.mensaje, "success");
+                    setTimeout(() => location.reload(), 2000);
+                } else { mostrarMensaje(result.detalle || "Error", "error"); }
+            } catch (error) {
+                document.getElementById('loading-overlay').style.display = 'none';
+                mostrarMensaje("Error de conexión.", "error");
+            }
+        }
+
+        // 7. CARGA DE GRÁFICOS (Modificada para incluir los botones en la tabla)
+        // VARIABLES GLOBALES PARA GRÁFICOS
+        let rawMetricsData = []; 
+        let chartInstances = {}; // Almacena las instancias para poder destruirlas al filtrar
+
+        // FUNCIÓN PRINCIPAL DE CARGA
+        async function loadAnalytics() {
+            try {
+                const res = await fetch("/metrics/api/data");
+                rawMetricsData = await res.json();
+                
+                if(!rawMetricsData || rawMetricsData.length === 0) {
+                    document.getElementById("tbody-metrics-history").innerHTML = "<tr><td colspan='6' style='text-align:center; padding:20px;'>No hay registros suficientes.</td></tr>";
+                    return;
+                }
+                
+                renderizarTablaHistorica(rawMetricsData);
+                aplicarFiltroTurno(); // Dispara el renderizado de gráficos por primera vez con "Todos"
+
+            } catch (err) { console.error("Error cargando analíticas:", err); }
+        }
+
+        // FUNCIONES DE SUMA RÁPIDA
+        const sumarTareas = (r) => r.sh_aws_c + r.sh_c + r.rh_c + r.inout_c + r.inc_c + r.inc_aws_c + r.calls_c + r.mails_c + r.td_c + r.acc_c + r.trad_c + r.pta_c + r.mop_c + r.abm_c + r.eti_c + r.chi_c + r.mia_c + r.te_c;
+        const sumarTiempo = (r) => r.sh_aws_t + r.sh_t + r.rh_t + r.inout_t + r.inc_t + r.inc_aws_t + r.calls_t + r.mails_t + r.td_t + r.acc_t + r.trad_t + r.pta_t + r.mop_t + r.abm_t + r.eti_t + r.chi_t + r.mia_t + r.te_t;
+        
+        // CONCEPTO A100 (AWS + Mantenimientos/MOPs)
+        const sumarA100_c = (r) => r.sh_aws_c + r.inc_aws_c + r.chi_c + r.mop_c; 
+        const sumarOtros_c = (r) => sumarTareas(r) - sumarA100_c(r);
+
+        // MOTOR DE FILTRADO
+        function aplicarFiltroTurno() {
+            const shiftFilter = document.getElementById("global-shift-filter").value;
+            let filteredData = rawMetricsData;
+            
+            if (shiftFilter !== "Todos") {
+                filteredData = rawMetricsData.filter(r => r.shift === shiftFilter);
+            }
+            
+            // Destruir gráficos viejos antes de dibujar los nuevos
+            Object.keys(chartInstances).forEach(key => chartInstances[key].destroy());
+            
+            if(filteredData.length > 0) {
+                dibujarGraficos(filteredData);
+            } else {
+                mostrarMensaje(`No hay datos históricos para el turno: ${shiftFilter}`, "error");
+            }
+        }
+
+        function crearGrafico(idElemento, tipo, configData, opcionesExtra = {}) {
+            const ctx = document.getElementById(idElemento).getContext('2d');
+            chartInstances[idElemento] = new Chart(ctx, {
+                type: tipo,
+                data: configData,
+                options: { responsive: true, maintainAspectRatio: false, ...opcionesExtra }
+            });
+        }
+
+        // DIBUJADO DE LOS 8 GRÁFICOS
+        function dibujarGraficos(data) {
+            // Preparar datos ordenados cronológicamente
+            const chronData = [...data].reverse();
+            const labelsFechas = chronData.map(r => new Date(r.created_at).toLocaleDateString());
+
+            // 1. PRODUCTIVIDAD: Real vs Meta (Asumimos una meta de 40 tareas por turno)
+            const metaArbitraria = 40; 
+            crearGrafico('chart-prod', 'bar', {
+                labels: labelsFechas,
+                datasets: [
+                    { label: 'Tareas Realizadas', data: chronData.map(sumarTareas), backgroundColor: '#3b82f6', borderRadius: 4 },
+                    { label: 'Meta Esperada', data: chronData.map(() => metaArbitraria), type: 'line', borderColor: '#ef4444', borderWidth: 2, pointRadius: 0 }
+                ]
+            });
+
+            // 2. DISTRIBUCIÓN DE TIEMPOS (Categorización Macro)
+            let t_hw = data.reduce((s, r) => s + r.sh_aws_t + r.sh_t + r.rh_t, 0);
+            let t_comms = data.reduce((s, r) => s + r.calls_t + r.mails_t + r.trad_t + r.chi_t + r.mia_t, 0);
+            let t_dc = data.reduce((s, r) => s + r.inout_t + r.acc_t + r.pta_t + r.abm_t + r.eti_t, 0);
+            let t_inc = data.reduce((s, r) => s + r.inc_t + r.inc_aws_t, 0);
+            let t_otros = data.reduce((s, r) => s + r.td_t + r.mop_t + r.te_t, 0);
+            
+            crearGrafico('chart-dist', 'pie', {
+                labels: ['Hardware/RH', 'Comunicaciones', 'Físico DC', 'Incidentes', 'Gestión/Otros'],
+                datasets: [{ data: [t_hw, t_comms, t_dc, t_inc, t_otros], backgroundColor: ['#f59e0b', '#3b82f6', '#10b981', '#ef4444', '#8b5cf6'] }]
+            });
+
+            // 3. A100 VS OTROS
+            let volA100 = data.reduce((s, r) => s + sumarA100_c(r), 0);
+            let volOtros = data.reduce((s, r) => s + sumarOtros_c(r), 0);
+            crearGrafico('chart-a100-vs', 'doughnut', {
+                labels: ['Proyecto A100', 'Resto Operativa'],
+                datasets: [{ data: [volA100, volOtros], backgroundColor: ['#ec4899', '#cbd5e1'], borderWidth: 0 }]
+            }, { cutout: '60%' });
+
+            // 4. DESGLOSE TAREAS A100 (Incluye Mantenimientos)
+            let a100_hw = data.reduce((s,r) => s + r.sh_aws_c, 0);
+            let a100_inc = data.reduce((s,r) => s + r.inc_aws_c, 0);
+            let a100_chi = data.reduce((s,r) => s + r.chi_c, 0);
+            let a100_mop = data.reduce((s,r) => s + r.mop_c, 0); // NUEVO
+
+            crearGrafico('chart-a100-desglose', 'bar', {
+                labels: ['SH AWS', 'Incidentes AWS', 'Llamadas/Mails Chile', 'Mantenimientos/MOPs'],
+                datasets: [{ label: 'Volumen', data: [a100_hw, a100_inc, a100_chi, a100_mop], backgroundColor: '#ec4899', borderRadius: 4 }]
+            }, { indexAxis: 'y' });
+
+            // 5. RITMO SEMANAL DE CARGA
+            let countsDias = [0,0,0,0,0,0,0]; // Dom a Sab
+            data.forEach(r => { countsDias[new Date(r.created_at).getDay()] += sumarTareas(r); });
+            // Reordenar Lunes a Domingo
+            const dataSemana = [countsDias[1], countsDias[2], countsDias[3], countsDias[4], countsDias[5], countsDias[6], countsDias[0]];
+            crearGrafico('chart-ritmo', 'line', {
+                labels: ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"],
+                datasets: [{ label: 'Volumen Acumulado', data: dataSemana, borderColor: '#8b5cf6', backgroundColor: 'rgba(139,92,246,0.2)', fill: true, tension: 0.4 }]
+            });
+
+            // 6. EFICIENCIA: VOLUMEN VS TIEMPO
+            crearGrafico('chart-efi', 'line', {
+                labels: labelsFechas,
+                datasets: [
+                    { label: 'Volumen (Uds)', data: chronData.map(sumarTareas), borderColor: '#0ea5e9', yAxisID: 'y' },
+                    { label: 'Tiempo Total (Min)', data: chronData.map(sumarTiempo), borderColor: '#f59e0b', borderDash: [5, 5], yAxisID: 'y1' }
+                ]
+            }, { scales: { y: { type: 'linear', position: 'left' }, y1: { type: 'linear', position: 'right', grid: { drawOnChartArea: false } } }});
+
+            // 7. OCUPACIÓN VS DISPONIBILIDAD (Asumiendo turno de 8hs = 480 min - 60 min break = 420 netos)
+            const minDisponibles = 420;
+            const dataOcupacion = chronData.map(sumarTiempo);
+            const dataLibre = dataOcupacion.map(t => Math.max(0, minDisponibles - t)); // Evita negativos si hubo horas extra
+            
+            crearGrafico('chart-ocup', 'bar', {
+                labels: labelsFechas,
+                datasets: [
+                    { label: 'Tiempo Ocupado', data: dataOcupacion, backgroundColor: '#f43f5e' },
+                    { label: 'Tiempo Libre', data: dataLibre, backgroundColor: '#e2e8f0' }
+                ]
+            }, { scales: { x: { stacked: true }, y: { stacked: true } } });
+
+            // 8. SEMANA VS FIN DE SEMANA
+            let tareasHabil = 0, turnosHabil = 0;
+            let tareasFinde = 0, turnosFinde = 0;
+            
+            data.forEach(r => {
+                const day = new Date(r.created_at).getDay();
+                if (day === 0 || day === 6) { tareasFinde += sumarTareas(r); turnosFinde++; } 
+                else { tareasHabil += sumarTareas(r); turnosHabil++; }
+            });
+
+            const promHabil = turnosHabil > 0 ? (tareasHabil / turnosHabil).toFixed(1) : 0;
+            const promFinde = turnosFinde > 0 ? (tareasFinde / turnosFinde).toFixed(1) : 0;
+
+            crearGrafico('chart-finde', 'polarArea', {
+                labels: ['Promedio Lun-Vie', 'Promedio Sab-Dom'],
+                datasets: [{ data: [promHabil, promFinde], backgroundColor: ['rgba(59,130,246,0.6)', 'rgba(239,68,68,0.6)'], borderWidth: 1 }]
+            });
+        }
+
+        // TABLA HISTÓRICA INFERIOR
+        function renderizarTablaHistorica(data) {
+            const tbody = document.getElementById("tbody-metrics-history");
+            tbody.innerHTML = data.map(r => {
+                const f = new Date(r.created_at);
+                return `<tr>
+                    <td><b>${f.toLocaleDateString()} ${f.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</b></td>
+                    <td>${r.operator_name}</td>
+                    <td><span class="badge" style="background: #3b82f6; color: white; padding: 4px 8px; border-radius: 4px;">${r.shift}</span></td>
+                    <td><strong style="color: #6c5ce7;">${sumarTareas(r)}</strong> uds.</td>
+                    <td><strong style="color: #00b894;">${sumarTiempo(r)}</strong> min.</td>
+                    <td style="white-space: nowrap;">
+                        <button onclick="abrirModalEdicion('${r.id}')" style="background:none; border:none; cursor:pointer; font-size:1.2rem;" title="Editar Tiempos">✏️</button>
+                        <button onclick="eliminarRegistro('${r.id}')" style="background:none; border:none; cursor:pointer; font-size:1.2rem; margin-left:10px;" title="Borrar Registro">🗑️</button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+    </script>
+    <script src="/static/js/theme.js"></script>
+</body>
+</html>

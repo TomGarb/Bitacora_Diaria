@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Consola Operativa - Datacenter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/css/main.css">
+    <link rel="stylesheet" href="/static/css/console.css">
+</head>
+<body class="dashboard-body">
+
+    <header class="top-bar">
+        <div class="top-date">📅 <span id="current-date">Cargando fecha...</span></div>
+        <div onclick="openSupportCenter()" style="position: relative; cursor: pointer; margin-right: 20px; font-size: 1.5rem;" title="Centro de Soporte">
+            🔔 <span id="bell-badge" style="position: absolute; top: -5px; right: -10px; background: #ef4444; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.7rem; font-weight: bold; display: none;">0</span>
+        </div>
+        <nav class="nav-links-modern">
+            <a href="/shift/" class="tab-btn active">🏠 Consola</a>
+            <a href="/operations/">⚙️ Operaciones</a>
+            <a href="/history/">📜 Histórico</a>
+            <a href="/master-data/">🗄️ Datos Maestros</a>
+            <a href="/metrics/">📊 Métricas</a>
+            <a href="#" onclick="toggleTheme(event)" class="theme-toggle-icon" style="background: transparent; border: 1px solid currentColor; margin-left: 15px;">🌙 Modo Oscuro</a>
+        </nav>
+
+        <div class="top-user" style="display: flex; align-items: center; gap: 15px;">
+            <span><strong>Operador:</strong> {{ user_name }}</span>
+            <a href="/logout" style="color: #ef4444; text-decoration: none; font-size: 0.9em; border: 1px solid #ef4444; padding: 4px 8px; border-radius: 4px;">🚪 Salir</a>
+        </div>
+    </header>
+
+    <main class="console-container">
+        
+        <div class="top-summary-grid">
+            <div class="summary-card" style="border-top-color: #3b82f6;">
+                <h3>📋 Casos y Novedades (Últimas 24h)</h3>
+                <ul id="w-cases" class="clean-list" style="font-size: 0.85rem;"></ul>
+            </div>
+            <div class="summary-card" style="border-top-color: #10b981;">
+                <h3>📅 Tareas Planificadas (Hoy)</h3>
+                <ul id="w-act-today" class="clean-list" style="font-size: 0.85rem;"></ul>
+            </div>
+            <div class="summary-card" style="border-top-color: #8b5cf6;">
+                <h3>🔐 Credenciales Activas</h3>
+                <ul id="w-creds" class="clean-list" style="font-size: 0.85rem;"></ul>
+            </div>
+        </div>
+
+        <div class="main-workspace">
+            
+            <div class="workspace-panel" style="display: flex; flex-direction: column;">
+                <h3 style="margin-top: 0; margin-bottom: 15px; color: #8b5cf6;">1. Parametrización del Turno</h3>
+                
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <select id="shift-selector" onchange="saveShift(); updateLivePreview();" style="padding: 8px; width: 100%; border-radius: 6px; border: 1px solid #cbd5e1; font-weight: bold;">
+                        <option value="" disabled selected>-- Seleccione su Turno --</option>
+                        <option value="Mañana (07:00 - 15:00)">Mañana (07:00 - 15:00)</option>
+                        <option value="Tarde (15:00 - 23:00)">Tarde (15:00 - 23:00)</option>
+                        <option value="Noche (23:00 - 07:00)">Noche (23:00 - 07:00)</option>
+                    </select>
+                </div>
+        
+                <div style="display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">
+                    <button id="btn-tab-metrics" onclick="switchTab('metrics')" style="padding: 8px 12px; background: #8b5cf6; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s;">📊 Novedades y Métricas</button>
+                    <button id="btn-tab-dest" onclick="switchTab('dest')" style="padding: 8px 12px; background: #f1f5f9; color: #475569; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s;">📧 Destinatarios</button>
+                </div>
+        
+                <div id="tab-metrics" style="display: flex; flex-direction: column; flex-grow: 1; overflow: hidden;">
+                    
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label style="font-size: 0.8rem; color: #b45309; font-weight: bold;">⚠️ Notas / Novedades para el Relevo (Opcional):</label>
+                        <textarea id="shift-notes" rows="3" placeholder="Ej: Fíjate la tarea de mantenimiento en el DC 2..." style="width: 100%; padding: 8px; border: 1px solid #fcd34d; border-radius: 4px; box-sizing: border-box; font-size: 0.85rem; background: #fffbeb; color: #92400e;"></textarea>
+                    </div>
+        
+                    <div style="flex-grow: 1; overflow-y: auto;">
+                        <table class="metrics-table">
+                            <thead>
+                                <tr><th>Indicador</th><th>Cant.</th><th>Minutos</th></tr>
+                            </thead>
+                            <tbody id="metrics-body">
+                                <tr><td>SH AWS</td><td><input type="number" id="c-sh-aws" min="0" value="0" class="metric-in"></td><td><input type="number" id="t-sh-aws" min="0" value="0" class="metric-in"></td></tr>
+                                <tr><td>SH</td><td><input type="number" id="c-sh" min="0" value="0" class="metric-in"></td><td><input type="number" id="t-sh" min="0" value="0" class="metric-in"></td></tr>
+                                <tr><td>RH</td><td><input type="number" id="c-rh" min="0" value="0" class="metric-in"></td><td><input type="number" id="t-rh" min="0" value="0" class="metric-in"></td></tr>
+                                <tr><td>In/Out</td><td><input type="number" id="c-inout" min="0" value="0" class="metric-in"></td><td><input type="number" id="t-inout" min="0" value="0" class="metric-in"></td></tr>
+                                <tr><td>INC</td><td><input type="number" id="c-inc" min="0" value="0" class="metric-in"></td><td><input type="number" id="t-inc" min="0" value="0" class="metric-in"></td></tr>
+                                <tr><td>Alarmas AWS</td><td><input type="number" id="c-inc-aws" min="0" value="0" class="metric-in"></td><td><input type="number" id="t-inc-aws" min="0" value="0" class="metric-in"></td></tr>
+                                <tr><td>Llamadas/Calls</td><td><input type="number" id="c-calls" min="0" value="0" class="metric-in"></td><td><input type="number" id="t-calls" min="0" value="0" class="metric-in"></td></tr>
+                                <tr><td>Mails</td><td><input type="number" id="c-mails" min="0" value="0" class="metric-in"></td><td><input type="number" id="t-mails" min="0" value="0" class="metric-in"></td></tr>
+                                <tr><td>Tareas Diarias</td><td><input type="number" id="c-td" min="0" value="0" class="metric-in"></td><td><input type="number" id="t-td" min="0" value="0" class="metric-in"></td></tr>
+                                <tr><td>Accesos/Visitas</td><td><input type="number" id="c-acc" min="0" value="0" class="metric-in"></td><td><input type="number" id="t-acc" min="0" value="0" class="metric-in"></td></tr>
+                                <tr><td>Traducción sect.</td><td><input type="number" id="c-trad" min="0" value="0" class="metric-in"></td><td><input type="number" id="t-trad" min="0" value="0" class="metric-in"></td></tr>
+                                <tr><td>Asistencia Puerta</td><td><input type="number" id="c-pta" min="0" value="0" class="metric-in"></td><td><input type="number" id="t-pta" min="0" value="0" class="metric-in"></td></tr>
+                                <tr><td>Mant. / MOPs</td><td><input type="number" id="c-mop" min="0" value="0" class="metric-in"></td><td><input type="number" id="t-mop" min="0" value="0" class="metric-in"></td></tr>
+                                <tr><td>ABM CMDB</td><td><input type="number" id="c-abm" min="0" value="0" class="metric-in"></td><td><input type="number" id="t-abm" min="0" value="0" class="metric-in"></td></tr>
+                                <tr><td>ABM Etiquetas</td><td><input type="number" id="c-eti" min="0" value="0" class="metric-in"></td><td><input type="number" id="t-eti" min="0" value="0" class="metric-in"></td></tr>
+                                <tr style="background:#fff7ed;"><td>Llamadas Chile</td><td><input type="number" id="c-chi" min="0" value="0" class="metric-in"></td><td><input type="number" id="t-chi" min="0" value="0" class="metric-in"></td></tr>
+                                <tr style="background:#fefce8;"><td>Llamadas MIA</td><td><input type="number" id="c-mia" min="0" value="0" class="metric-in"></td><td><input type="number" id="t-mia" min="0" value="0" class="metric-in"></td></tr>
+                                <tr style="background:#f1f5f9;"><td>Tareas Adicionales</td><td><input type="number" id="c-te" min="0" value="0" class="metric-in"></td><td><input type="number" id="t-te" min="0" value="0" class="metric-in"></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+        
+                <div id="tab-dest" style="display: none;">
+                    <div class="form-group" style="display: flex; flex-direction: column; gap: 12px; background: #f8fafc; padding: 15px; border-radius: 6px; border: 1px dashed #cbd5e1;">
+                        
+                        <div>
+                            <label style="font-size: 0.8rem; color: #475569; font-weight: bold;">📧 Para (Destinatario principal):</label>
+                            <input type="text" id="email-to" value="dl-arg-dc-doc-eng@ciriontechnologies.com" required style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; font-size: 0.85rem;">
+                        </div>
+                        
+                        <div>
+                            <label style="font-size: 0.8rem; color: #475569; font-weight: bold;">👥 CC (En copia):</label>
+                            <input type="text" id="email-cc" value="dl-arg-dc-doc@ciriontechnologies.com" placeholder="Opcional. Separe con comas..." style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; font-size: 0.85rem;">
+                        </div>
+        
+                        <div style="font-size: 0.75rem; color: #64748b; margin-top: 5px; padding: 8px; background: #e2e8f0; border-radius: 4px;">
+                            ℹ️ <b>Emisor Automático:</b> El correo se enviará a nombre de tu usuario logueado.
+                        </div>
+                    </div>
+                </div>
+        
+            </div>
+        
+            <div class="workspace-panel" style="padding: 0;">
+                <div style="background: #1e293b; color: white; padding: 10px 20px; font-weight: bold; display: flex; justify-content: space-between; align-items: center;">
+                    <span>2. Vista Previa del Reporte (Live)</span>
+                    <button id="btn-final-close" class="btn-primary" style="background: #10b981; padding: 6px 15px;" onclick="validateAndSend()">🚀 Consolidar y Enviar</button>
+                </div>
+                <div id="email-preview-container">
+                    <div style="text-align: center; color: #94a3b8; margin-top: 50px;">Cargando plantilla corporativa...</div>
+                </div>
+            </div>
+        
+        </div>
+    </main>
+
+    <button onclick="openFeedbackModal()" style="position: fixed; bottom: 25px; right: 25px; background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); color: white; border-radius: 50%; width: 60px; height: 60px; font-size: 28px; border: none; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4); cursor: pointer; z-index: 1000;" title="Reportar Error o Mejora">🐞</button>
+    
+
+    <div id="support-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 800px; padding: 0; border-radius: 12px; overflow: hidden;">
+            <div style="background: #1e293b; color: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0; font-size: 1.2rem;">🔔 Centro de Soporte y Mensajes</h3>
+                <button type="button" class="btn-danger" onclick="closeSupportCenter()" style="padding: 5px 12px;">Cerrar</button>
+            </div>
+            <div style="padding: 20px; background: #f8fafc; max-height: 70vh; overflow-y: auto;" id="support-messages-container">
+                <div class="empty-msg" style="text-align: center; padding: 30px; color: #64748b;">No tienes mensajes nuevos.</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="feedback-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 500px; border-top: 5px solid #ef4444;">
+            <h2 style="margin-top: 0; color: #b91c1c;">🐞 Reportar Incidencia / Mejora</h2>
+            <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 20px;">Utiliza este formulario para reportar errores en el sistema o sugerir mejoras a los administradores.</p>
+            
+            <form id="feedback-form" onsubmit="submitFeedback(event)">
+                <div class="form-group">
+                    <label>Tipo de Reporte:</label>
+                    <select id="fb-type" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #cbd5e1;">
+                        <option value="Error (Bug)">Error / Fallo del sistema</option>
+                        <option value="Mejora (Funcionalidad)">Sugerencia de Mejora</option>
+                        <option value="Duda Operativa">Duda de uso</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Título Breve:</label>
+                    <input type="text" id="fb-title" required placeholder="Ej: El botón de enviar no responde" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #cbd5e1;">
+                </div>
+                
+                <div class="form-group">
+                    <label>Descripción detallada:</label>
+                    <textarea id="fb-obs" rows="4" required placeholder="Describe paso a paso qué estabas haciendo y qué ocurrió..." style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #cbd5e1;"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>Adjuntar Captura (Opcional):</label>
+                    <input type="file" id="fb-file" accept="image/*" style="width: 100%; font-size: 0.9rem;">
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 25px;">
+                    <button type="button" class="btn-danger" style="flex: 1;" onclick="closeFeedbackModal()">Cancelar</button>
+                    <button type="submit" class="btn-primary" style="flex: 1;">Enviar Reporte</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/js/utils.js"></script>
+    <script src="/static/js/theme.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

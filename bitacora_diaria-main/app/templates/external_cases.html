@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Casos Externos (Chile/Miami)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body style="background: transparent; padding: 20px;">
+
+    <div style="display: grid; grid-template-columns: 350px 1fr; gap: 25px; align-items: start;">
+        
+        <div class="form-section">
+            <h2>🌎 Gestión de Sitios Externos</h2>
+            <form id="ext-case-form" onsubmit="saveExternalCase(event)">
+                <input type="hidden" id="ext-id" name="id">
+                
+                <div class="form-group">
+                    <label>Sitio Afectado:</label>
+                    <select id="ext-site" name="site" required>
+                        <option value="Chile">🇨🇱 AWS Chile</option>
+                        <option value="Miami">🇺🇸 MIA Datacenter</option>
+                    </select>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="form-group">
+                        <label>Número de Ticket:</label>
+                        <input type="text" id="ext-ticket" name="ticket_number" required placeholder="Ej. INC0012345">
+                    </div>
+                    <div class="form-group">
+                        <label>Cliente:</label>
+                        <input type="text" id="ext-client" name="client" required placeholder="Nombre">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Motivo del Ticket:</label>
+                    <input type="text" id="ext-reason" name="reason" required placeholder="Resumen del problema">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="form-group">
+                        <label>Estado:</label>
+                        <select id="ext-status" name="status" required>
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="En Proceso">En Proceso</option>
+                            <option value="Escalado">Escalado</option>
+                            <option value="Resuelto">Resuelto</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Llamados/Mails:</label>
+                        <input type="number" id="ext-count" name="contact_count" value="0" min="0">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Actualizaciones / Observaciones:</label>
+                    <textarea id="ext-updates" name="updates" rows="4" placeholder="Detalla los avances aquí..."></textarea>
+                </div>
+
+                <div class="form-actions" style="display: flex; flex-direction: column; gap: 10px;">
+                    <button type="submit" class="btn-primary" style="width: 100%;">Guardar Caso Externo</button>
+                    <button type="button" class="btn-secondary" style="width: 100%;" onclick="resetForm()">Limpiar Formulario</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="list-section">
+            <h2>Listado de Casos Activos</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Sitio</th>
+                            <th>Ticket</th>
+                            <th>Cliente</th>
+                            <th>Motivo</th>
+                            <th>Estado</th>
+                            <th>Contactos</th>
+                            <th>Actualizaciones</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ext-table-body">
+                        <tr><td colspan="8" style="text-align:center;">Cargando casos...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", loadCases);
+
+        async function loadCases() {
+            try {
+                const res = await fetch("/external-cases/api/list");
+                const data = await res.json();
+                const tbody = document.getElementById("ext-table-body");
+                
+                if (data.length === 0) {
+                    tbody.innerHTML = "<tr><td colspan='8' style='text-align:center;' class='empty-msg'>No hay casos externos registrados.</td></tr>";
+                    return;
+                }
+
+                tbody.innerHTML = data.map(c => {
+                    let badge = c.site === 'Chile' ? 'background: #dc2626; color: white;' : 'background: #2563eb; color: white;';
+                    return `
+                    <tr>
+                        <td><span class="badge" style="${badge}">${c.site}</span></td>
+                        <td style="font-weight: bold;">${c.ticket_number}</td>
+                        <td>${c.client}</td>
+                        <td>${c.reason}</td>
+                        <td><span class="badge ${c.status.replace(" ", "-")}">${c.status}</span></td>
+                        <td style="text-align:center; font-weight:bold;">📞 ${c.contact_count}</td>
+                        <td style="max-width: 250px; white-space: normal;">${c.updates || '-'}</td>
+                        <td>
+                            <button class="btn-sm btn-primary" onclick='editCase(${JSON.stringify(c).replace(/'/g, "&#39;")})'>✏️</button>
+                            <button class="btn-sm btn-danger" onclick="deleteCase('${c.id}')">🗑️</button>
+                        </td>
+                    </tr>`;
+                }).join('');
+            } catch(e) { console.error(e); }
+        }
+
+        async function saveExternalCase(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            try {
+                const res = await fetch("/external-cases/api/save", { method: "POST", body: formData });
+                if (res.ok) {
+                    resetForm();
+                    loadCases();
+                }
+            } catch(err) { alert("Error al guardar"); }
+        }
+
+        function editCase(c) {
+            document.getElementById("ext-id").value = c.id;
+            document.getElementById("ext-site").value = c.site;
+            document.getElementById("ext-ticket").value = c.ticket_number;
+            document.getElementById("ext-client").value = c.client;
+            document.getElementById("ext-reason").value = c.reason;
+            document.getElementById("ext-status").value = c.status;
+            document.getElementById("ext-count").value = c.contact_count;
+            document.getElementById("ext-updates").value = c.updates;
+        }
+
+        async function deleteCase(id) {
+            if (!confirm("¿Eliminar este caso externo permanentemente?")) return;
+            await fetch(`/external-cases/api/delete/${id}`, { method: "DELETE" });
+            loadCases();
+        }
+
+        function resetForm() { document.getElementById("ext-case-form").reset(); document.getElementById("ext-id").value = ""; }
+    </script>
+    <script src="/static/js/utils.js"></script>
+    <script src="/static/js/theme.js"></script>
+</body>
+</html>

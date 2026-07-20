@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Histórico Global - Datacenter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        .tabs-header { display: flex; gap: 10px; margin-bottom: 25px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+        .tab-btn { background: #e2e8f0; color: #475569; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .tab-btn.active { background: #3b82f6; color: white; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3); }
+        .badge-type { padding: 4px 8px; border-radius: 4px; font-size: 0.85em; font-weight: bold; color: white; display: inline-block; text-transform: uppercase; }
+    </style>
+</head>
+<body class="dashboard-body">
+
+    <header class="top-bar">
+        <div class="top-date">📅 <span id="current-date">Cargando fecha...</span></div>
+        <div onclick="openSupportCenter()" style="position: relative; cursor: pointer; margin-right: 20px; font-size: 1.5rem;" title="Centro de Soporte">
+            🔔 <span id="bell-badge" style="position: absolute; top: -5px; right: -10px; background: #ef4444; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.7rem; font-weight: bold; display: none;">0</span>
+        </div>
+        <nav class="nav-links-modern">
+            <a href="/shift/">🏠 Dashboard</a>
+            <a href="/operations/">⚙️ Operaciones</a>
+            <a href="/history/">📜 Histórico</a>
+            <a href="/master-data/">🗄️ Datos Maestros</a>
+            <a href="/metrics/" class="tab-btn">📊 Métricas</a>
+            <a href="#" onclick="toggleTheme(event)" class="theme-toggle-icon" style="background: transparent; border: 1px solid currentColor; margin-left: 15px;">🌙 Modo Oscuro</a>
+        </nav>
+    
+        <div class="top-user" style="display: flex; align-items: center; gap: 15px;">
+            <span><strong>Operador:</strong> {{ user_name }}</span>
+            
+            <a href="/logout" style="color: #ef4444; text-decoration: none; font-size: 0.9em; border: 1px solid #ef4444; padding: 4px 8px; border-radius: 4px;" title="Cerrar sesión">
+                🚪 Salir
+            </a>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="tabs-header">
+            <div class="tab-btn active" onclick="switchTab('tab-reportes')">📧 Correos de Cierre de Turno</div>
+            <div class="tab-btn" onclick="switchTab('tab-auditoria')">🔍 Auditoría y Búsqueda Global</div>
+        </div>
+
+        <div id="tab-reportes" class="tab-content">
+            <div class="list-section" style="border-top-color: #3b82f6;">
+                <h2>Últimos Reportes Enviados</h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Fecha y Hora de Cierre</th>
+                                <th>Operador / Emisor</th> 
+                                <th>Asunto del Reporte (Turno y Ciclo)</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-reports">
+                            <tr><td colspan="3" style="text-align:center;">Cargando histórico de reportes...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-auditoria" class="tab-content hidden">
+            <div class="form-section" style="border-top-color: #3b82f6; margin-bottom: 25px;">
+                <h2>Buscador Dinámico de Registros</h2>
+                <div class="form-group">
+                    <input type="text" id="history-search" placeholder="🔍 Escriba un número de ticket, asunto, observaciones o tipo de registro para filtrar..." onkeyup="filterHistory()" style="padding: 12px; width: 100%; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 1rem; box-sizing: border-box;">
+                </div>
+            </div>
+
+            <div class="list-section" style="border-top-color: #10b981;">
+                <h2>Línea de Tiempo Operativa</h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 120px;">Tipo</th>
+                                <th style="width: 150px;">Ticket / ID</th>
+                                <th>Asunto / Título</th>
+                                <th>Observaciones / Detalles</th>
+                                <th style="width: 160px;">Fecha Registro</th>
+                                <th style="width: 180px;">Turno Declarado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-history-data">
+                            <tr><td colspan="6" style="text-align:center;">Cargando línea de tiempo...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="view-report-modal" class="modal hidden">
+        <div class="modal-content" style="width: 95%; max-width: 1600px; height: 90vh; display: flex; flex-direction: column; background: #f8fafc; padding: 0; overflow: hidden;">
+            
+            <div style="background: white; padding: 20px; border-bottom: 1px solid #e2e8f0; flex-shrink: 0;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <h2 id="view-report-subject" style="margin: 0 0 10px 0; font-size: 1.5rem; color: #0f172a;">Asunto del correo</h2>
+                        <div style="color: #475569; font-size: 0.95rem; line-height: 1.5;">
+                            <strong>De:</strong> <span id="view-report-from"></span> <br>
+                            <strong>Para:</strong> <span id="view-report-to"></span> <br>
+                            <strong>CC:</strong> <span id="view-report-cc"></span> <br>
+                            <strong>Fecha de envío:</strong> <span id="view-report-date"></span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-danger" onclick="closeViewModal()" style="padding: 8px 20px; font-weight: bold; font-size: 1rem;">❌ Cerrar Vista</button>
+                </div>
+            </div>
+
+            <div id="view-report-body" style="padding: 25px; flex-grow: 1; overflow: auto; background: white; margin: 15px; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        let allHistoryData = []; 
+        let loadedReports = []; 
+
+        document.addEventListener("DOMContentLoaded", () => {
+            loadReports();
+            loadHistoryData();
+        });
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.remove('hidden');
+            if(event && event.target) event.target.classList.add('active');
+        }
+
+        // --- 1. DECLARAMOS deleteReport PRIMERO ---
+        async function deleteReport(reportId) {
+            console.log("📌 Intentando borrar el reporte con ID:", reportId);
+
+            if (!reportId) {
+                alert("❌ Error: El ID del reporte no es válido.");
+                return;
+            }
+
+            if (!confirm("⚠️ ¿Estás seguro de que deseas eliminar este reporte del histórico?")) {
+                return;
+            }
+
+            try {
+                const res = await fetch(`/history/api/reports/${reportId}`, {
+                    method: "DELETE"
+                });
+
+                if (res.ok) {
+                    alert("✅ Reporte eliminado correctamente.");
+                    loadReports();
+                } else {
+                    const errText = await res.text();
+                    alert(`❌ Error al eliminar (HTTP ${res.status}): ${errText}`);
+                }
+            } catch (e) {
+                console.error("Error de red al eliminar el reporte:", e);
+                alert("❌ Error de red al intentar conectar con el servidor.");
+            }
+        }
+
+        // --- 2. DECLARAMOS openReport ---
+        function openReport(index) {
+            const report = loadedReports[index];
+            document.getElementById("view-report-subject").innerText = report.subject;
+            document.getElementById("view-report-from").innerText = report.from_email || "Desconocido";
+            document.getElementById("view-report-to").innerText = report.to_email || "Desconocido";
+            document.getElementById("view-report-cc").innerText = report.cc_email || "Ninguno";
+            document.getElementById("view-report-date").innerText = report.date + " hs";
+            document.getElementById("view-report-body").innerHTML = report.html || report.content_preview;
+            document.getElementById("view-report-modal").classList.remove("hidden");
+        }
+
+        function closeViewModal() {
+            document.getElementById("view-report-modal").classList.add("hidden");
+        }
+
+        // --- 3. DECLARAMOS loadReports DESPUÉS (Donde ya existen deleteReport y openReport) ---
+        async function loadReports() {
+            try {
+                const res = await fetch("/history/api/reports");
+                loadedReports = await res.json(); 
+                
+                const tbody = document.getElementById("tbody-reports");
+                
+                if (loadedReports.length === 0) {
+                    tbody.innerHTML = "<tr><td colspan='4' style='text-align:center;'>No hay reportes de cierre guardados aún.</td></tr>";
+                    return;
+                }
+
+                tbody.innerHTML = loadedReports.map((r, index) => `
+                    <tr>
+                        <td style="font-weight:bold;">${r.date} hs</td>
+                        <td><span class="badge-type" style="background-color: #8b5cf6;">${r.from_email || 'No registrado'}</span></td>
+                        <td>${r.subject}</td>
+                        <td style="display: flex; gap: 8px;">
+                            <button class="btn-sm btn-primary btn-view" data-index="${index}">👁️ Ver</button>
+                            <button class="btn-sm btn-danger btn-delete" data-id="${r.id}">🗑️ Borrar</button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                // Asociamos los eventos de forma limpia
+                document.querySelectorAll('.btn-view').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        openReport(e.target.getAttribute('data-index'));
+                    });
+                });
+
+                document.querySelectorAll('.btn-delete').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        deleteReport(e.target.getAttribute('data-id'));
+                    });
+                });
+
+            } catch(e) { console.error("Error cargando reportes:", e); }
+        }
+
+        // CONTROL DE PESTAÑA 2: BUSCADOR GLOBAL Y AUDITORÍA
+        async function loadHistoryData() {
+            try {
+                const res = await fetch("/history/api/data");
+                allHistoryData = await res.json();
+                renderHistoryTable(allHistoryData);
+            } catch(e) { console.error("Error al mapear auditoría:", e); }
+        }
+
+        function renderHistoryTable(data) {
+            const tbody = document.getElementById("tbody-history-data");
+            if (!data || data.length === 0) {
+                tbody.innerHTML = "<tr><td colspan='6' style='text-align:center;' class='empty-msg'>No se encontraron registros coincidentes.</td></tr>";
+                return;
+            }
+
+            tbody.innerHTML = data.map(item => {
+                const dateObj = new Date(item.created_at);
+                const formattedDate = isNaN(dateObj) ? item.created_at : dateObj.toLocaleString('es-ES', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
+                
+                let badgeColor = '#64748b'; 
+                if (item.type === 'Caso') badgeColor = '#ef4444';        
+                if (item.type === 'Subtarea') badgeColor = '#3b82f6';    
+                if (item.type === 'Tarea Extra') badgeColor = '#f59e0b'; 
+                if (item.type === 'Nota') badgeColor = '#10b981';       
+
+                return `
+                    <tr>
+                        <td><span class="badge-type" style="background-color: ${badgeColor};">${item.type}</span></td>
+                        <td><code>${item.ticket}</code></td>
+                        <td><strong>${item.title}</strong></td>
+                        <td style="text-align: left; max-width: 450px; white-space: normal;">${item.observations}</td>
+                        <td style="white-space: nowrap;">${formattedDate} hs</td>
+                        <td><small style="color:#475569; font-weight:500;">${item.shift}</small></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function filterHistory() {
+            const query = document.getElementById("history-search").value.toLowerCase();
+            const filtered = allHistoryData.filter(item => {
+                return item.ticket.toLowerCase().includes(query) ||
+                       item.title.toLowerCase().includes(query) ||
+                       item.observations.toLowerCase().includes(query) ||
+                       item.type.toLowerCase().includes(query);
+            });
+            renderHistoryTable(filtered);
+        }
+
+        
+    </script>
+    <script src="/static/js/utils.js"></script>
+    <script src="/static/js/theme.js"></script>
+</body>
+</html>

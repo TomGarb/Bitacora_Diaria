@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Tareas Planificadas - Datacenter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        /* Estilo sutil para la caja de aprobación */
+        .approval-box {
+            display: none; 
+            padding: 12px; 
+            background-color: #f8f9fa; 
+            border-left: 4px solid #ffc107; 
+            border-radius: 4px; 
+            margin-bottom: 15px;
+        }
+        .approval-label {
+            font-weight: bold; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            color: #333; 
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <header class="navbar">
+        <h1>Tareas Planificadas</h1>
+    </header>
+
+    <main class="container two-columns">
+        <section class="form-section">
+            <h2 id="form-title">Nueva Planificación</h2>
+            <form id="activity-form">
+                <input type="hidden" id="act-id">
+                
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Nro Ticket:</label>
+                        <input type="text" id="ticket" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Cliente:</label>
+                        <input type="text" id="client" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Título:</label>
+                    <input type="text" id="title" required>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Sitio a realizar (DC):</label>
+                        <input type="text" name="site" id="act-site" class="autocomplete-site" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Tipo:</label>
+                        <select id="type" required onchange="toggleAprobacion()">
+                            <option value="Mantenimiento">Mantenimiento</option>
+                            <option value="Manos remotas">Manos remotas</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="div_aprobacion" class="form-group approval-box">
+                    <label class="approval-label">
+                        <input type="checkbox" id="is_approved">
+                        ✅ Mantenimiento Aprobado por el Cliente / Change Management
+                    </label>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Fecha de Solicitud:</label>
+                        <input type="date" id="req-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Estado:</label>
+                        <select id="status" required>
+                            <option value="Pendiente">Pendiente</option>
+                            <option value="En progreso">En progreso</option>
+                            <option value="Completado">Completado</option>
+                            <option value="Cancelado">Cancelado (Inactivo)</option>
+                            <option value="Sin estado">Sin estado</option>
+                        </select>
+                    </div>
+                </div>
+
+                <hr>
+                
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Fecha Inicio:</label>
+                        <input type="date" id="start-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Hora Inicio:</label>
+                        <input type="time" id="start-time" required>
+                    </div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label>Fecha Fin (Opcional):</label>
+                        <input type="date" id="end-date">
+                    </div>
+                    <div class="form-group">
+                        <label>Hora Fin (Opcional):</label>
+                        <input type="time" id="end-time">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Descripción / Observaciones:</label>
+                    <textarea id="observations" rows="3"></textarea>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">Guardar Planificación</button>
+                    <button type="button" id="btn-cancel-edit" class="btn-secondary hidden">Cancelar Edición</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="list-section">
+            <h2>Planificadas Vigentes</h2>
+            <div class="table-container">
+                <table id="activities-table">
+                    <thead>
+                        <tr>
+                            <th>Ticket</th>
+                            <th>Info</th>
+                            <th>Inicio</th>
+                            <th>Fin</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="activities-body">
+                        </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        function toggleAprobacion() {
+            const tipo = document.getElementById('type').value;
+            const divAprobacion = document.getElementById('div_aprobacion');
+            const checkboxAprobacion = document.getElementById('is_approved');
+            
+            if (tipo === 'Mantenimiento') {
+                divAprobacion.style.display = 'block';
+            } else {
+                divAprobacion.style.display = 'none';
+                checkboxAprobacion.checked = false; 
+            }
+        }
+
+        // Ejecutar al cargar la página por si "Mantenimiento" es el valor por defecto
+        document.addEventListener('DOMContentLoaded', toggleAprobacion);
+    </script>
+
+    <script src="/static/js/utils.js"></script>
+    <script src="/static/js/theme.js"></script>
+    <script src="/static/js/activities_manager.js"></script>
+</body>
+</html>

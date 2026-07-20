@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Monitor de Operaciones - DataCenter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            overflow: hidden; /* Evita barras de desplazamiento en la TV */
+            height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Encabezado limpio sin navegación */
+        .tv-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #1e293b;
+            padding: 15px 30px;
+            border-radius: 12px;
+            border-bottom: 4px solid #8b5cf6;
+        }
+        .tv-title { font-size: 2rem; font-weight: bold; letter-spacing: 1px; }
+        .tv-clock { font-size: 2rem; font-weight: bold; color: #38bdf8; }
+
+        /* Cuadrícula de 6 bloques exactos */
+        .tv-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 20px;
+            flex-grow: 1;
+        }
+
+        /* Estilo de cada panel de monitoreo */
+        .panel {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #334155;
+        }
+        .panel-title {
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #334155;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .counter-badge {
+            background: #334155;
+            color: #38bdf8;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 1.1rem;
+        }
+
+        /* Listas y tablas de datos de gran tamaño */
+        .data-container { flex-grow: 1; overflow: hidden; display: flex; flex-direction: column; }
+        .tv-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+        .tv-item {
+            background: #111827;
+            padding: 12px 15px;
+            border-radius: 8px;
+            font-size: 1.15rem;
+            border-left: 5px solid #64748b;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        /* Variaciones de estados visuales rápidos */
+        .border-green { border-left-color: #10b981; }
+        .border-amber { border-left-color: #f59e0b; }
+        .border-purple { border-left-color: #a855f7; }
+
+        .empty-msg { color: #64748b; text-align: center; margin-top: 30px; font-size: 1.2rem; }
+
+        /* Animación y estilos exclusivos para el carrusel de reportes */
+        .report-carousel-container {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .report-card {
+            background: #0f172a;
+            padding: 25px;
+            border-radius: 10px;
+            border-left: 5px solid #0ea5e9;
+            width: 100%;
+            text-align: center;
+            animation: fadeIn 0.8s ease-out;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: translateY(15px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="tv-header">
+        <div class="tv-title">🖥️ BITÁCORA OPERATIVA DATACENTER</div>
+        <div class="tv-clock" id="tv-clock">00:00:00</div>
+    </header>
+
+    <main class="tv-grid">
+        <div class="panel">
+            <div class="panel-title">🔑 Credenciales Activas <span class="counter-badge" id="count-creds">0</span></div>
+            <div class="data-container"><ul class="tv-list" id="list-creds"></ul></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">📅 Planificadas Hoy <span class="counter-badge" id="count-today">0</span></div>
+            <div class="data-container"><ul class="tv-list" id="list-today"></ul></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">🚪 Ingresos Próximos <span class="counter-badge" id="count-access">0</span></div>
+            <div class="data-container"><ul class="tv-list" id="list-access"></ul></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">⏳ Tareas Próximas <span class="counter-badge" id="count-upcoming">0</span></div>
+            <div class="data-container"><ul class="tv-list" id="list-upcoming"></ul></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">✅ Tareas Realizadas <span class="counter-badge" id="count-done" style="color:#10b981;">0</span></div>
+            <div class="data-container"><ul class="tv-list" id="list-done"></ul></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">📝 Notas Operativas <span class="counter-badge" id="count-notes" style="color:#f43f5e;">0</span></div>
+            <div class="report-carousel-container" id="notes-carousel">
+                <div class="empty-msg">Cargando notas...</div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Reloj
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('tv-clock').innerText = now.toLocaleTimeString('es-AR');
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Variables globales para el carrusel de Notas
+        let notesData = [];
+        let currentNoteIndex = 0;
+
+        // Función que rota la nota mostrada en pantalla
+        function rotateNotes() {
+            const container = document.getElementById('notes-carousel');
+            
+            if (!notesData || notesData.length === 0) {
+                container.innerHTML = '<div class="empty-msg">No hay notas activas</div>';
+                return;
+            }
+
+            const note = notesData[currentNoteIndex];
+            
+            // Asignamos colores según la prioridad
+            let priorityColor = '#10b981'; // Verde por defecto (Baja)
+            if (note.priority === 'Alta') priorityColor = '#ef4444'; // Rojo
+            if (note.priority === 'Media') priorityColor = '#f59e0b'; // Amarillo
+            
+            // Renderizamos la tarjeta animada
+            container.innerHTML = `
+                <div class="report-card" style="border-left-color: ${priorityColor};">
+                    <div style="font-size: 1.4rem; font-weight: bold; margin-bottom: 12px; color: #f8fafc;">${note.title}</div>
+                    <div style="color: #cbd5e1; font-size: 1.15rem; margin-bottom: 15px; font-style: italic; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">"${note.observations}"</div>
+                    <div style="color: ${priorityColor}; font-size: 1.1rem; font-weight: bold;">Prioridad: ${note.priority}</div>
+                </div>
+            `;
+
+            currentNoteIndex = (currentNoteIndex + 1) % notesData.length;
+        }
+
+        // Ejecutar la rotación cada 8 segundos (un poco más de tiempo para leer)
+        setInterval(rotateNotes, 8000);
+
+        // Llamada a la API
+        async function fetchMonitorData() {
+            try {
+                const res = await fetch("/shift/api/summary");
+                if (!res.ok) return;
+                const data = await res.json();
+
+                // 1. Render Credenciales
+                const creds = data.active_credentials || [];
+                document.getElementById('count-creds').innerText = creds.length;
+                document.getElementById('list-creds').innerHTML = creds.length 
+                    ? creds.slice(0, 5).map(c => `<li class="tv-item border-purple"><span>${c.name}</span><code style="color:#c084fc;">${c.code}</code></li>`).join('')
+                    : '<div class="empty-msg">No hay llaves activas</div>';
+
+                // 2. Tareas Planificadas
+                const today = data.activities_today || [];
+                document.getElementById('count-today').innerText = today.length;
+                document.getElementById('list-today').innerHTML = today.length
+                    ? today.slice(0, 5).map(t => `<li class="tv-item border-amber"><span>${t.title}</span><span style="color:#fcd34d;">${t.time} hs</span></li>`).join('')
+                    : '<div class="empty-msg">Sin tareas para hoy</div>';
+
+                // 3. Ingresos
+                const access = data.accesses_week || [];
+                document.getElementById('count-access').innerText = access.length;
+                document.getElementById('list-access').innerHTML = access.length
+                    ? access.slice(0, 5).map(a => `<li class="tv-item"><span>[${a.client}] ${a.title}</span></li>`).join('')
+                    : '<div class="empty-msg">No hay ingresos reportados</div>';
+
+                // 4. Tareas Próximas
+                const upcoming = data.activities_week || [];
+                document.getElementById('count-upcoming').innerText = upcoming.length;
+                document.getElementById('list-upcoming').innerHTML = upcoming.length
+                    ? upcoming.slice(0, 5).map(u => `<li class="tv-item"><span>${u.title}</span></li>`).join('')
+                    : '<div class="empty-msg">Sin tareas pendientes</div>';
+
+                // 5. Tareas Realizadas (Ajustadas a 5 items para caber en 1 sola columna)
+                const casesDone = data.cases_24h || [];
+                const extraDone = data.extra_24h || [];
+                const totalDone = [...casesDone, ...extraDone];
+                document.getElementById('count-done').innerText = totalDone.length;
+                document.getElementById('list-done').innerHTML = totalDone.length
+                    ? totalDone.slice(0, 5).map(d => `<li class="tv-item border-green"><span>${d.title}</span></li>`).join('')
+                    : '<div class="empty-msg">No se registran eventos completados</div>';
+
+                // 6. Notas Operativas (Actualizamos la variable global del carrusel)
+                notesData = data.notes || [];
+                document.getElementById('count-notes').innerText = notesData.length;
+                
+                // Si es la primera vez que carga y hay datos, disparamos la rotación inmediatamente
+                if (notesData.length > 0 && document.getElementById('notes-carousel').innerHTML.includes('Cargando')) {
+                    rotateNotes();
+                }
+
+            } catch (err) {
+                console.error("Error actualizando pantalla de monitoreo:", err);
+            }
+        }
+
+        // Refresco de API cada 30 segundos
+        setInterval(fetchMonitorData, 30000);
+        fetchMonitorData();
+    </script>
+</body>
+</html>

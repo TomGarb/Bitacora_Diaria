@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Carga de Datos Maestros - Datacenter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        .tabs-header { display: flex; gap: 10px; margin-bottom: 25px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+        .tab-btn { background: #e2e8f0; color: #475569; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .tab-btn.active { background: #8b5cf6; color: white; box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3); }
+        .drop-zone { border: 3px dashed #cbd5e1; padding: 40px; text-align: center; border-radius: 12px; background: #f8fafc; cursor: pointer; transition: 0.3s; }
+        .drop-zone:hover, .drop-zone.dragover { border-color: #8b5cf6; background: #f5f3ff; }
+        .excel-template-info { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 0.9rem; color: #1e3a8a;}
+    </style>
+</head>
+<body>
+    <header class="top-bar">
+        <div class="top-date">📅 <span id="current-date">Cargando fecha...</span></div>
+        <div onclick="openSupportCenter()" style="position: relative; cursor: pointer; margin-right: 20px; font-size: 1.5rem;" title="Centro de Soporte">
+            🔔 <span id="bell-badge" style="position: absolute; top: -5px; right: -10px; background: #ef4444; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.7rem; font-weight: bold; display: none;">0</span>
+        </div>
+        <nav class="nav-links-modern">
+            <a href="/shift/">🏠 Dashboard</a>
+            <a href="/operations/">⚙️ Operaciones</a>
+            <a href="/history/">📜 Histórico</a>
+            <a href="/master-data/" class="tab-btn active">🗄️ Datos Maestros</a>
+            <a href="/metrics/">📊 Métricas</a>
+            <a href="#" onclick="toggleTheme(event)" class="theme-toggle-icon" style="background: transparent; border: 1px solid currentColor; margin-left: 15px;">🌙 Modo Oscuro</a>
+        </nav>
+
+        <div class="top-user" style="display: flex; align-items: center; gap: 15px;">
+            <span><strong>Operador:</strong> {{ user_name }}</span>
+            <a href="/logout" style="color: #ef4444; text-decoration: none; font-size: 0.9em; border: 1px solid #ef4444; padding: 4px 8px; border-radius: 4px; transition: all 0.2s;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='transparent'" title="Cerrar sesión">
+                🚪 Salir
+            </a>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="tabs-header">
+            <div class="tab-btn active" onclick="switchTab('tab-individual')">Carga Individual Formulario</div>
+            <div class="tab-btn" onclick="switchTab('tab-masiva')">🚀 Carga Masiva (Excel)</div>
+            <div class="tab-btn" onclick="switchTab('tab-gestion')">📋 Gestionar Registros</div>
+            
+            {% if user_role == 'Administrador' %}
+            <button class="tab-btn" id="btn-tab-users" onclick="switchTab('tab-users')">👥 Usuarios y Permisos</button>
+            {% endif %}
+        </div>
+
+        <div id="tab-individual" class="tab-content grid-2">
+            <div class="form-section">
+                <h2>Cargar Nuevo Cliente</h2>
+                <form id="form-client">
+                    <div class="form-group"><label>Nombre de la Empresa:</label><input type="text" id="c-name" required placeholder="Ej. Telecom"></div>
+                    <div class="form-group"><label>Código Alfanumérico:</label><input type="text" id="c-code" required placeholder="Ej. TEL-01"></div>
+                    <button type="submit" class="btn-primary">Guardar Cliente</button>
+                </form>
+            </div>
+            <div class="form-section" style="border-top-color:#10b981;">
+                <h2>Cargar DataCenter</h2>
+                <form id="form-dc">
+                    <div class="form-group"><label>Nombre de la Sede/Sitio:</label><input type="text" id="dc-name" required placeholder="Ej. Chacarita Sede Central"></div>
+                    <button type="submit" class="btn-purple" style="background:linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow:none;">Guardar Sede</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="tab-masiva" class="tab-content hidden">
+            <div class="grid-2" style="max-width:1300px; margin:0 auto;">
+                <div class="form-section" style="border-top-color:#8b5cf6;">
+                    <h2>Carga Masiva de Clientes</h2>
+                    <div class="excel-template-info">
+                        <strong>Estructura requerida (.xlsx):</strong><br>
+                        • Fila 1: Cabeceras (Nombre | Código)<br>
+                        • Columna A: Nombre de la Empresa<br>
+                        • Columna B: Código Alfanumérico Único
+                        <br><br>
+                        <a href="/master-data/api/template/clients" class="btn-secondary" style="display:inline-block; text-decoration:none; font-size:0.9em; padding:8px 15px;">⬇️ Descargar Plantilla</a>
+                    </div>
+                    <div class="drop-zone" id="drop-zone-clients">📂 Arrastra tu archivo aquí o haz clic<input type="file" id="input-clients" accept=".xlsx" style="display:none;"></div>
+                    <div id="result-clients" style="margin-top:20px; font-weight:bold; text-align:center;"></div>
+                </div>
+
+                <div class="form-section" style="border-top-color:#10b981;">
+                    <h2>Carga Masiva de DataCenters</h2>
+                    <div class="excel-template-info" style="background:#ecfdf5; border-left-color:#10b981; color:#065f46;">
+                        <strong>Estructura requerida (.xlsx):</strong><br>
+                        • Fila 1: Cabecera (Nombre)<br>
+                        • Columna A: Nombre de la Sede/Sitio
+                        <br><br>
+                        <a href="/master-data/api/template/datacenters" class="btn-secondary" style="display:inline-block; text-decoration:none; font-size:0.9em; padding:8px 15px; background:#d1fae5; color:#065f46;">⬇️ Descargar Plantilla</a>
+                    </div>
+                    <div class="drop-zone" id="drop-zone-dcs">📂 Arrastra tu archivo aquí o haz clic<input type="file" id="input-dcs" accept=".xlsx" style="display:none;"></div>
+                    <div id="result-dcs" style="margin-top:20px; font-weight:bold; text-align:center;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-gestion" class="tab-content hidden">
+            <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                <input type="text" id="filter-clients" placeholder="🔍 Buscar cliente..." onkeyup="filterTable('tbody-manage-clients', this.value)" style="padding: 10px; width: 100%; border: 1px solid #cbd5e1; border-radius: 8px;">
+                <input type="text" id="filter-dcs" placeholder="🔍 Buscar sitio/datacenter..." onkeyup="filterTable('tbody-manage-dcs', this.value)" style="padding: 10px; width: 100%; border: 1px solid #cbd5e1; border-radius: 8px;">
+            </div>
+        
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; align-items: start;">
+                <div class="list-section" style="border-top-color:#8b5cf6; margin: 0;">
+                    <h2>Clientes en Sistema</h2>
+                    <div class="table-container">
+                        <table>
+                            <thead><tr><th>Empresa</th><th>Código</th><th>Acciones</th></tr></thead>
+                            <tbody id="tbody-manage-clients"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="list-section" style="border-top-color:#10b981; margin: 0;">
+                    <h2>Sitios / DataCenters en Sistema</h2>
+                    <div class="table-container">
+                        <table>
+                            <thead><tr><th>Nombre Sede</th><th>Acciones</th></tr></thead>
+                            <tbody id="tbody-manage-dcs"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if user_role == 'Administrador' %}
+        <div id="tab-users" class="tab-content hidden grid-2">
+            <div class="form-section" style="border-top-color: #3b82f6;">
+                <h2>Modificar Permisos Internos</h2>
+                <form id="form-user" onsubmit="saveUser(event)">
+                    <input type="hidden" id="u-id" name="id">
+                    
+                    <div class="form-group">
+                        <label>Usuario (Lectura):</label>
+                        <input type="text" id="u-username" name="username" readonly style="background: #f1f5f9; cursor: not-allowed;">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Rol / Permiso asignado:</label>
+                        <select id="u-role" name="role" required>
+                            <option value="Operador">Operador (Solo lectura en Maestros)</option>
+                            <option value="Administrador">Administrador (Control total)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="resetUserForm()">Limpiar Selección</button>
+                        <button type="submit" class="btn-primary">Actualizar Rol</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="list-section" style="border-top-color: #3b82f6;">
+                <h2>Operadores Registrados</h2>
+                <p style="color: #64748b; font-size: 0.9em; margin-bottom: 15px;">Los usuarios aparecen aquí automáticamente al iniciar sesión por primera vez.</p>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Usuario</th>
+                                <th>Rol Interno</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-users">
+                            <tr><td colspan="3" style="text-align:center;">Cargando usuarios...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </main>
+
+    <div id="edit-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 id="modal-title">Modificar Registro</h2>
+            <form id="form-modal-edit">
+                <input type="hidden" id="modal-id">
+                <input type="hidden" id="modal-type">
+                <div class="form-group">
+                    <label>Nombre:</label>
+                    <input type="text" id="modal-name" required>
+                </div>
+                <div class="form-group" id="modal-code-container">
+                    <label>Código:</label>
+                    <input type="text" id="modal-code">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">Guardar Cambios</button>
+                    <button type="button" class="btn-secondary" onclick="closeModal()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/js/utils.js"></script>
+    <script src="/static/js/theme.js"></script>
+    <script src="/static/js/master_data.js"></script>
+</body>
+</html>

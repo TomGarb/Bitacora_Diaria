@@ -1,0 +1,622 @@
+/* ==========================================================================
+   1. BASE Y RESET CORPORATIVO
+   ========================================================================== */
+   body, .dashboard-body { 
+    background-color: #f4f7f9; 
+    margin: 0; 
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+    color: #334155; 
+}
+h1, h2, h3 { margin-top: 0; color: #0f172a; }
+a { text-decoration: none; color: #6366f1; transition: 0.2s; }
+a:hover { color: #4f46e5; }
+.hidden { display: none !important; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+
+/* ==========================================================================
+   2. NAVEGACIÓN UNIVERSAL (Aplica a todas las pantallas)
+   ========================================================================== */
+.navbar, .top-bar { 
+    background: #ffffff; 
+    padding: 15px 30px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.05); 
+    border-bottom: 4px solid #8b5cf6; /* Acento Violeta Corporativo */
+}
+.navbar h1 { font-size: 1.4rem; font-weight: 700; margin: 0; background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.navbar nav, .nav-links-modern { display: flex; gap: 12px; align-items: center; }
+.navbar nav a, .nav-links-modern a { 
+    background: #f1f5f9; color: #475569; padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 0.95rem; transition: all 0.2s ease;
+}
+.navbar nav a:hover, .nav-links-modern a:hover { 
+    background: #8b5cf6; color: white; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3);
+}
+
+/* ==========================================================================
+   3. CONTENEDORES Y FORMULARIOS (Pantallas de Carga)
+   ========================================================================== */
+.container { max-width: 1400px; margin: 30px auto; padding: 0 20px; }
+.two-columns { display: grid; grid-template-columns: 450px 1fr; gap: 25px; align-items: start; }
+
+.form-section, .list-section { 
+    background: #ffffff; 
+    border-radius: 16px; 
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); 
+    padding: 30px; 
+    border-top: 5px solid #8b5cf6; 
+}
+.list-section { border-top: 5px solid #3b82f6; } /* Azul para diferenciar la lista */
+
+.form-section h2, .list-section h2 { font-size: 1.3rem; margin-bottom: 25px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px;}
+
+.form-group { margin-bottom: 18px; }
+.form-group label { display: block; font-weight: 600; margin-bottom: 8px; color: #475569; font-size: 0.95rem;}
+.form-group input, .form-group select, .form-group textarea { 
+    width: 100%; padding: 12px 15px; background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; box-sizing: border-box; font-family: inherit; font-size: 1rem; color: #0f172a; transition: all 0.3s ease;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { 
+    outline: none; border-color: #8b5cf6; background-color: #ffffff; box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.15); 
+}
+
+/* ==========================================================================
+   4. BOTONES (Modernos y con relieve)
+   ========================================================================== */
+.form-actions { display: flex; gap: 15px; margin-top: 25px; }
+button { font-family: inherit; cursor: pointer; border: none; border-radius: 10px; padding: 12px 20px; font-weight: 700; transition: all 0.2s; font-size: 1rem;}
+
+.btn-primary, .btn-purple { 
+    background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%); color: white; box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.39); 
+}
+.btn-primary:hover, .btn-purple:hover { transform: translateY(-2px); box-shadow: 0 6px 20px 0 rgba(99, 102, 241, 0.5); }
+
+.btn-secondary { background: #e2e8f0; color: #475569; }
+.btn-secondary:hover { background: #cbd5e1; color: #0f172a; }
+
+.btn-info { background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: white; }
+.btn-info:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4); }
+
+.btn-danger { background: #fee2e2; color: #ef4444; }
+.btn-danger:hover { background: #ef4444; color: white; }
+
+.btn-edit { background: #fef3c7; color: #d97706; }
+.btn-edit:hover { background: #f59e0b; color: white; }
+
+.btn-sm { padding: 6px 12px; font-size: 0.85rem; border-radius: 6px; margin-right: 5px; }
+
+/* ==========================================================================
+   5. TABLAS DE DATOS
+   ========================================================================== */
+.table-container { overflow-x: auto; background: #ffffff; border-radius: 10px; }
+table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 10px; }
+th, td { padding: 15px; text-align: left; border-bottom: 1px solid #f1f5f9; }
+th { background-color: #f8fafc; font-weight: 700; color: #64748b; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; }
+tr { transition: background-color 0.2s; }
+tr:hover { background-color: #f8fafc; }
+td strong { color: #0f172a; }
+
+/* ==========================================================================
+   6. ETIQUETAS (BADGES)
+   ========================================================================== */
+.badge { padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; color: white; font-weight: 700; display: inline-block; letter-spacing: 0.3px;}
+.badge.En-progreso { background-color: #3b82f6; }
+.badge.Resuelto, .badge.Completado { background-color: #10b981; }
+.badge.Pendiente { background-color: #f59e0b; }
+.badge.Cancelado { background-color: #94a3b8; }
+.badge.Sin-estado { background-color: #e2e8f0; color: #475569; }
+
+/* ==========================================================================
+   7. DASHBOARD Y WIDGETS
+   ========================================================================== */
+.dash-layout { display: grid; grid-template-columns: 380px 1fr; gap: 25px; max-width: 1600px; margin: 30px auto; padding: 0 20px; }
+.dash-col-left { display: flex; flex-direction: column; gap: 25px; }
+.dash-col-right { display: flex; flex-direction: column; gap: 25px; }
+.right-top-row { display: grid; grid-template-columns: 1fr 220px; gap: 25px; }
+
+.dash-card { background: #ffffff; border-radius: 16px; box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.05); padding: 25px; position: relative; }
+.card-title-center { text-align: center; margin: 0 0 20px 0; color: #1e293b; font-size: 1.25rem; font-weight: 700; }
+.card-tall { min-height: 400px; border-top: 5px solid #3b82f6; }
+.card-today { min-height: 120px; border-top: 5px solid #10b981; }
+
+.card-pink { background: linear-gradient(135deg, #fdf4ff 0%, #fae8ff 100%); border: none; border-left: 6px solid #d946ef; } /* Actualizado a un fucsia/púrpura corporativo */
+.notes-header { display: flex; align-items: center; margin-bottom: 15px; color: #86198f; font-size: 1.1rem; }
+.note-badge { background: #d946ef; color: white; padding: 4px 10px; border-radius: 6px; font-weight: bold; margin-right: 12px; }
+.notes-content { color: #701a75; font-size: 1.05rem; line-height: 1.6; min-height: 70px; font-weight: 500;}
+.mini-arrows { position: absolute; top: 20px; right: 20px; }
+.mini-arrows button { background: rgba(255, 255, 255, 0.6); border: none; font-size: 1.2em; cursor: pointer; color: #a21caf; border-radius: 6px; padding: 2px 8px; margin-left: 5px; }
+
+.main-carousel-card { flex-grow: 1; min-height: 450px; display: flex; flex-direction: column; border-top: 5px solid #8b5cf6; }
+.main-carousel-header { display: flex; justify-content: center; align-items: center; position: relative; margin-bottom: 25px; }
+.main-controls { position: absolute; right: 0; display: flex; gap: 10px; align-items: center; }
+.circle-btn { width: 38px; height: 38px; border-radius: 50%; border: none; background: #f1f5f9; color: #475569; font-weight: bold; cursor: pointer; transition: 0.2s;}
+.circle-btn:hover { background: #cbd5e1; color: #0f172a; transform: scale(1.05);}
+
+.clean-list, .carousel-list { list-style: none; padding: 0; margin: 0; }
+.clean-list li { padding: 15px 15px; border-bottom: 1px solid #f1f5f9; font-size: 0.95rem; color: #475569; transition: background 0.2s;}
+.clean-list li:hover { background: #f8fafc; border-radius: 8px;}
+.clean-list li:last-child { border-bottom: none; }
+
+.carousel-list li { padding: 20px; border: 1px solid #e2e8f0; margin-bottom: 15px; border-radius: 12px; background: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.02); font-size: 1.05rem; color: #334155; transition: transform 0.2s; border-left: 5px solid #8b5cf6;}
+.carousel-list li:hover { transform: translateX(5px); }
+
+.border-cases { border-left-color: #ef4444 !important; }
+.border-act-today { border-left-color: #10b981 !important; }
+.border-act-week { border-left-color: #3b82f6 !important; }
+.border-acc-week { border-left-color: #f59e0b !important; }
+.border-creds { border-left-color: #8b5cf6 !important; }
+.border-extra { border-left-color: #64748b !important; }
+
+/* Modales */
+.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+.modal-content { background: white; padding: 30px; border-radius: 16px; width: 500px; position: relative; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+
+/* ==========================================================================
+   8. SECCIONES DINÁMICAS (Carga de Credenciales)
+   ========================================================================== */
+   .section-box { 
+    background: #f8fafc; 
+    border: 1px solid #e2e8f0; 
+    padding: 20px; 
+    border-radius: 12px; 
+    margin-bottom: 20px; 
+}
+.section-box h3 { 
+    font-size: 1.1rem; 
+    color: #475569; 
+    border-bottom: 2px solid #e2e8f0; 
+    padding-bottom: 10px; 
+    margin-bottom: 15px; 
+}
+
+/* La cajita de cada ingresante */
+.person-row { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; /* Ahora son 2 columnas amplias */
+    gap: 12px; 
+    margin-bottom: 15px; 
+    background: #ffffff; 
+    padding: 15px; 
+    border-radius: 10px; 
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+}
+
+.person-row input { 
+    min-width: 0; /* Magia CSS: Permite que el input no desborde su contenedor */
+    margin-bottom: 0; 
+}
+
+/* Acomodamos el Código y el botón de Borrar en la fila de abajo */
+.person-row .p-code {
+    grid-column: 1 / 2; 
+}
+.person-row .btn-danger {
+    grid-column: 2 / 3;
+    height: 100%; /* Para que tenga el mismo alto que el input */
+}
+
+/* ==========================================================================
+   9. WORKSPACE UNIFICADO (Ventana Maestra de Operaciones)
+   ========================================================================== */
+   .ops-layout { 
+    display: grid; 
+    grid-template-columns: 260px 1fr; 
+    gap: 30px; 
+    max-width: 1600px; 
+    margin: 30px auto; 
+    padding: 0 20px; 
+    align-items: start; 
+}
+
+.ops-sidebar { 
+    background: #ffffff; 
+    border-radius: 16px; 
+    padding: 20px 0; 
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); 
+    position: sticky; 
+    top: 30px; 
+}
+
+.ops-sidebar h3 {
+    padding: 0 25px;
+    font-size: 0.9rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 15px;
+}
+
+.ops-nav-item { 
+    padding: 15px 25px; 
+    font-weight: 600; 
+    color: #475569; 
+    cursor: pointer; 
+    border-left: 4px solid transparent; 
+    transition: all 0.2s ease; 
+    display: flex; 
+    align-items: center; 
+    gap: 12px; 
+    font-size: 1.05rem;
+}
+
+.ops-nav-item:hover { 
+    background: #f8fafc; 
+    color: #8b5cf6; 
+}
+
+.ops-nav-item.active { 
+    border-left-color: #8b5cf6; 
+    background: #f5f3ff; 
+    color: #8b5cf6; 
+}
+
+.ops-section {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Estilos cuando una página se carga dentro del menú maestro */
+.is-iframe body { background-color: transparent; }
+.is-iframe .navbar, .is-iframe .operator-bar { display: none !important; }
+.is-iframe .container { margin-top: 0 !important; }
+
+/* ==========================================================================
+   MODO OSCURO (DARK MODE) - APLICACIÓN ESTRICTA
+   ========================================================================== */
+
+/* 1. Fondo principal */
+body.dark-mode {
+    background-color: #0f172a !important;
+    color: #e2e8f0 !important;
+}
+
+/* 2. Cabecera (Header / Navbar) */
+body.dark-mode header,
+body.dark-mode .navbar,
+body.dark-mode .top-bar {
+    background-color: #1e293b !important;
+    border-bottom: 1px solid #334155 !important;
+}
+
+/* Textos dentro del Header */
+body.dark-mode header *,
+body.dark-mode .navbar * {
+    color: #f8fafc !important;
+}
+
+/* Botones del Header (Dashboard, Operaciones, etc.) */
+body.dark-mode .nav-links-modern a,
+body.dark-mode .tab-btn {
+    background-color: #334155 !important;
+    color: #f8fafc !important;
+    border: 1px solid #475569 !important;
+}
+
+/* 3. Tarjetas, Paneles y Contenedores Blancos */
+/* Apuntamos a clases comunes y a cajas directas dentro del main */
+body.dark-mode main > div,
+body.dark-mode .card,
+body.dark-mode .panel,
+body.dark-mode .form-section,
+body.dark-mode .list-section,
+body.dark-mode .modal-content {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* 4. Títulos (Mantenimientos, Credenciales, Casos) */
+body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, 
+body.dark-mode h4, body.dark-mode h5, body.dark-mode label {
+    color: #f8fafc !important;
+}
+
+/* 5. Cajas Interiores / Listas ("No hay registros recientes") */
+body.dark-mode ul, 
+body.dark-mode ol, 
+body.dark-mode li {
+    background-color: #0f172a !important;
+    border-color: #334155 !important;
+    color: #cbd5e1 !important;
+}
+
+/* 6. Formularios y Tablas */
+body.dark-mode input, body.dark-mode select, body.dark-mode textarea {
+    background-color: #0f172a !important; color: #f8fafc !important; border: 1px solid #475569 !important;
+}
+body.dark-mode table th { background-color: #0f172a !important; color: #cbd5e1 !important; border-bottom: 2px solid #334155 !important; }
+body.dark-mode table td { background-color: #1e293b !important; color: #f1f5f9 !important; border-bottom: 1px solid #334155 !important; }
+
+/* 7. LA REGLA DE ORO: Forzar cualquier div que tenga fondo blanco en línea (inline style) */
+body.dark-mode div[style*="background: white"], 
+body.dark-mode div[style*="background-color: white"],
+body.dark-mode div[style*="background:#ffffff"],
+body.dark-mode div[style*="background-color:#ffffff"],
+body.dark-mode div[style*="background: #ffffff"],
+body.dark-mode div[style*="background-color: #ffffff"] {
+    background-color: #1e293b !important;
+    color: #f8fafc !important;
+}
+
+/* ==========================================================================
+   MODO OSCURO - CAZADOR DE TARJETAS Y LISTAS (DASHBOARD Y OPERACIONES)
+   ========================================================================== */
+
+/* 1. Capturar cualquier contenedor en el Dashboard y Operaciones */
+body.dark-mode .dashboard-grid > div,
+body.dark-mode .grid > div,
+body.dark-mode [class*="card"],
+body.dark-mode [class*="box"],
+body.dark-mode [class*="panel"],
+body.dark-mode [class*="widget"] {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    color: #f8fafc !important;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4) !important;
+}
+
+/* 2. Capturar las listas dinámicas generadas por app.js (border-cases, etc) */
+body.dark-mode li[class*="border-"],
+body.dark-mode .list-item,
+body.dark-mode .ticket-item,
+body.dark-mode .case-card {
+    background-color: #0f172a !important;
+    border-color: #334155 !important;
+    color: #e2e8f0 !important;
+}
+
+/* 3. Asegurar que los textos dentro de esas listas sean blancos */
+body.dark-mode li[class*="border-"] strong,
+body.dark-mode li[class*="border-"] span,
+body.dark-mode li[class*="border-"] small {
+    color: #cbd5e1 !important;
+}
+
+/* 4. Fondos blancos cortos (Hex) */
+body.dark-mode div[style*="#fff"],
+body.dark-mode div[style*="#FFF"] {
+    background-color: #1e293b !important;
+}
+
+/* ==========================================================================
+   CORRECCIÓN PARA DATOS MAESTROS - TEXTOS Y NOMBRES OCULTOS
+   ========================================================================== */
+
+/* Forzar a que cualquier elemento de texto dentro de las celdas sea claro */
+body.dark-mode table td,
+body.dark-mode table td * {
+    color: #f1f5f9 !important; /* Gris muy claro/blanco */
+}
+
+/* Si los nombres en datos maestros son enlaces (links) cliqueables */
+body.dark-mode table td a,
+body.dark-mode .list-section a {
+    color: #38bdf8 !important; /* Azul celeste llamativo y legible en fondo oscuro */
+    text-decoration: none;
+}
+body.dark-mode table td a:hover {
+    text-decoration: underline;
+}
+
+/* Por si los nombres aparecen dentro de inputs de "solo lectura" o deshabilitados */
+body.dark-mode input[readonly],
+body.dark-mode input[disabled],
+body.dark-mode select[disabled] {
+    color: #cbd5e1 !important;
+    background-color: #1e293b !important;
+    border-color: #475569 !important;
+}
+
+/* Asegurar legibilidad de títulos secundarios en las secciones de gestión */
+body.dark-mode .list-section h2,
+body.dark-mode .list-section h3,
+body.dark-mode .form-section h2 {
+    color: #ffffff !important;
+}
+
+/* ==========================================================================
+   NOTIFICACIONES FLOTANTES (TOASTS)
+   ========================================================================== */
+   #toast-container {
+    position: fixed;
+    bottom: 30px; /* Cambia a top: 30px si prefieres que salgan arriba */
+    left: 30px;   /* Cambia a right: 30px si prefieres la derecha */
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    pointer-events: none; /* Evita que bloqueen clics en el fondo accidentalmente */
+}
+
+.toast {
+    min-width: 250px;
+    max-width: 400px;
+    padding: 16px 20px;
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 0.95rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: slideUpFade 0.4s ease forwards;
+    pointer-events: auto; /* Permite interactuar si luego agregas un botón de cerrar */
+}
+
+.toast .toast-icon {
+    font-size: 1.5rem;
+}
+
+.toast .toast-message {
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+/* Tipos de Notificación */
+.toast.success {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border-left: 6px solid #047857;
+}
+
+.toast.error {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    border-left: 6px solid #991b1b;
+}
+
+/* Animaciones */
+@keyframes slideUpFade {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.toast.fade-out {
+    opacity: 0 !important;
+    transform: translateY(10px) !important;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* ==========================================================================
+   DISEÑO RESPONSIVO (MÓVILES, TABLETS Y PANTALLAS PEQUEÑAS)
+   ========================================================================== */
+
+/* Evitar scroll horizontal fantasma en todo el sitio */
+html, body {
+    overflow-x: hidden;
+}
+
+/* 1. CONTENEDOR DE TABLAS SEGURO (Evita que las tablas rompan la pantalla) */
+.table-container, .list-section {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; /* Scroll suave en iOS */
+}
+
+/* 2. ADAPTACIÓN PARA TABLETS (Pantallas menores a 1024px) */
+@media (max-width: 1024px) {
+    /* Si el menú de Operaciones es lateral, lo pasamos arriba */
+    .operations-layout, .main-container {
+        flex-direction: column !important;
+        display: flex;
+    }
+
+    .sidebar-menu {
+        width: 100% !important;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        border-right: none !important;
+        border-bottom: 2px solid #cbd5e1;
+        padding-bottom: 10px;
+    }
+
+    .sidebar-menu li {
+        flex: 1 1 calc(33% - 10px); /* 3 botones por fila en tablet */
+        text-align: center;
+        margin-bottom: 5px;
+    }
+
+    #module-iframe {
+        height: 75vh !important; /* Darle aire al iframe */
+        min-height: 600px;
+    }
+}
+
+/* 3. ADAPTACIÓN PARA MÓVILES (Pantallas menores a 768px) */
+@media (max-width: 768px) {
+    /* Cabecera / Navbar: Apilar los botones en lugar de fila */
+    header, .top-bar, .navbar {
+        flex-direction: column;
+        height: auto !important;
+        padding: 15px 10px;
+        text-align: center;
+    }
+
+    /* Contenedor de botones superiores */
+    .nav-links, .header-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 10px;
+    }
+
+    /* Hacer que los botones midan la mitad de la pantalla */
+    .nav-links a, .tab-btn {
+        flex: 1 1 calc(50% - 10px);
+        font-size: 0.85rem;
+        padding: 8px 5px;
+        text-align: center;
+    }
+
+    /* Colapsar todos los Grids (Dashboard) a 1 sola columna */
+    .dashboard-grid, .grid, .cards-container {
+        grid-template-columns: 1fr !important;
+        gap: 15px;
+    }
+
+    /* Forzar a todos los formularios en línea (como el de Sitios Externos) a 1 columna */
+    div[style*="grid-template-columns"] {
+        grid-template-columns: 1fr !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    /* Achicar títulos enormes */
+    h1 { font-size: 1.5rem; }
+    h2 { font-size: 1.25rem; }
+
+    /* Ajustar Modales para que no se salgan de la pantalla */
+    .modal-content {
+        width: 95% !important;
+        max-width: 100% !important;
+        margin: 10px auto;
+        padding: 15px;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    /* Formularios: Poner los botones de Guardar/Cancelar uno arriba de otro */
+    .form-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .form-actions button {
+        width: 100%;
+        margin-left: 0 !important;
+    }
+    
+    /* El menú de Operaciones ahora pasa a 2 botones por fila en móvil */
+    .sidebar-menu li {
+        flex: 1 1 calc(50% - 10px);
+        padding: 10px 5px;
+        font-size: 0.9rem;
+    }
+}
+
+/* Asegurar que las tarjetas o contenedores de las tablas tengan un fondo sólido contrastante */
+.card, .table-container, .bg-dark-box {
+    background-color: #121824; /* Un azul/negro más profundo que distinga la tarjeta */
+    color: #e2e8f0;          /* Letras claras (gris muy claro/blanco suave) */
+    border: 1px solid #1e293b; /* Un borde sutil para delimitar la caja */
+  }
+  
+  /* Forzar que los textos de "No hay datos" se vean claramente */
+  .text-muted, .empty-state {
+    color: #94a3b8 !important; /* Gris legible, no negro invisible */
+  }
+  
+  /* Encabezados de tablas legibles */
+  th {
+    color: #ffffff !important;
+    background-color: #1a2234 !important;
+  }
+
+
+  

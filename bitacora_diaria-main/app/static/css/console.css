@@ -1,0 +1,58 @@
+/* ==========================================================================
+ * CONSOLE & DASHBOARD STYLES (app/static/css/console.css)
+ * ========================================================================== */
+
+ .nav-links-modern { display: flex; gap: 10px; }
+ .nav-links-modern a { background: #f1f5f9; color: #475569; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 0.9em; text-decoration: none; transition: 0.2s; }
+ .nav-links-modern a:hover { background: #8b5cf6; color: white; }
+ 
+ /* Layout de la Consola */
+ .console-container { display: flex; flex-direction: column; gap: 20px; padding: 20px; max-width: 100%; height: calc(100vh - 80px); }
+ 
+ /* Bloque Superior: 3 Columnas */
+ .top-summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; height: 25%; min-height: 200px; }
+ .summary-card { background: white; border-radius: 8px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-top: 4px solid #cbd5e1; overflow-y: auto; }
+ .summary-card h3 { margin-top: 0; font-size: 1rem; color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; position: sticky; top: 0; background: white; z-index: 10; }
+ 
+ /* Bloque Central: 2 Columnas (Inputs y Preview) */
+ .main-workspace { display: grid; grid-template-columns: 400px 1fr; gap: 20px; height: 75%; overflow: hidden; }
+ .workspace-panel { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-direction: column; overflow-y: auto; }
+ 
+ /* Inputs compactos */
+ .metrics-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+ .metrics-table th { background: #f8fafc; padding: 8px; text-align: left; position: sticky; top: 0; z-index: 10; }
+ .metrics-table td { padding: 6px; border-bottom: 1px solid #f1f5f9; }
+ .metric-in { width: 60px; padding: 4px; border: 1px solid #cbd5e1; border-radius: 4px; text-align: center; }
+ 
+ /* VISTA PREVIA AISLADA */
+ #email-preview-container {
+     background-color: #ffffff !important;
+     color: #1e293b !important;
+     border: 1px solid #cbd5e1;
+     padding: 15px;
+     border-radius: 8px;
+ }
+ #email-preview-container table { border-collapse: collapse !important; width: 100% !important; }
+ #email-preview-container .email-preview-table td { border: 1px solid #94a3b8 !important; padding: 5px; font-size: 9pt; }
+ #email-preview-container td[bgcolor], #email-preview-container td[style*="background-color"] { -webkit-print-color-adjust: exact; }
+ 
+ /* BLINDAJE CONTRA EL MODO OSCURO PARA LOS COLORES DE LAS CELDAS */
+ body.dark-mode #email-preview-container { background-color: #ffffff !important; color: #1e293b !important; }
+ body.dark-mode #email-preview-container td[bgcolor="#8ED973"] { background-color: #8ED973 !important; color: #000000 !important; }
+ body.dark-mode #email-preview-container td[bgcolor="#E2F0D9"] { background-color: #E2F0D9 !important; color: #000000 !important; }
+ body.dark-mode #email-preview-container td[bgcolor="#A02B93"] { background-color: #A02B93 !important; color: #ffffff !important; }
+ body.dark-mode #email-preview-container td[bgcolor="#D86DCD"] { background-color: #D86DCD !important; color: #000000 !important; }
+ body.dark-mode #email-preview-container td[bgcolor="#DA0000"] { background-color: #DA0000 !important; color: #ffffff !important; }
+ body.dark-mode #email-preview-container td[bgcolor="#FF9999"] { background-color: #FF9999 !important; color: #000000 !important; }
+ body.dark-mode #email-preview-container td[bgcolor="#607D8B"] { background-color: #607D8B !important; color: #ffffff !important; }
+ body.dark-mode #email-preview-container td[bgcolor="#CFD8DC"] { background-color: #CFD8DC !important; color: #000000 !important; }
+ body.dark-mode #email-preview-container td[bgcolor="#26849C"] { background-color: #26849C !important; color: #ffffff !important; }
+ body.dark-mode #email-preview-container td[bgcolor="#92CDDC"] { background-color: #92CDDC !important; color: #000000 !important; }
+ body.dark-mode #email-preview-container td[bgcolor="#F59E0B"] { background-color: #F59E0B !important; color: #ffffff !important; }
+ body.dark-mode #email-preview-container td[bgcolor="#FDE68A"] { background-color: #FDE68A !important; color: #000000 !important; }
+ 
+ /* Colores Modo Oscuro General (Interfaz) */
+ body.dark-mode .summary-card, body.dark-mode .workspace-panel { background: #1e293b; border-color: #334155; }
+ body.dark-mode .summary-card h3, body.dark-mode .metrics-table th { background: #1e293b; color: #f8fafc; border-color: #334155; }
+ body.dark-mode .metrics-table td { border-color: #334155; }
+ body.dark-mode .metric-in { background: #0f172a; color: white; border-color: #475569; }
