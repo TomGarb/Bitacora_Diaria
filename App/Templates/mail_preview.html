@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}Vista Previa de Mail - DOC{% endblock %}
-{% block page_title %}Vista Previa del Mail de Resumen{% endblock %}
+{% block page_title %}Vista Previa del Mail de Resumen de Turno{% endblock %}
 
 {% block styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='Css/mail_preview.css') }}">
@@ -47,7 +47,7 @@
     <div class="mail-brand-header">
       <div>
         <h2 style="font-size:1.25rem; font-weight:700; margin:0;">DOC - CENTRO DE OPERACIONES</h2>
-        <div style="font-size:0.85rem; opacity:0.8;">Reporte de Novedades y Pase de Guardia</div>
+        <div style="font-size:0.85rem; opacity:0.8;">Reporte Oficial de Novedades y Pase de Guardia</div>
       </div>
       <div style="text-align:right;">
         <div id="mail-region-name" style="font-weight:700;">Buenos Aires</div>
@@ -56,34 +56,193 @@
       </div>
     </div>
 
-    <!-- Tabla Resumen Ejecutivo -->
-    <h3 style="font-size:1rem; color:#0f172a; margin-bottom:0.5rem;">Resumen de Estado de Actividades</h3>
-    <table class="mail-summary-table">
-      <thead>
-        <tr>
-          <th>Total Actividades</th>
-          <th>Completadas</th>
-          <th>En Progreso</th>
-          <th>Pendientes</th>
-          <th>Actividades Programadas</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><strong id="stat-total" style="font-size:1.1rem; color:#2563eb;">0</strong></td>
-          <td><strong id="stat-comp" style="font-size:1.1rem; color:#16a34a;">0</strong></td>
-          <td><strong id="stat-prog" style="font-size:1.1rem; color:#2563eb;">0</strong></td>
-          <td><strong id="stat-pend" style="font-size:1.1rem; color:#d97706;">0</strong></td>
-          <td><strong id="stat-prog-act" style="font-size:1.1rem; color:#7c3aed;">0</strong></td>
-        </tr>
-      </tbody>
-    </table>
+    <!-- 1. NOTAS DE TURNO Y NOVEDADES (ARRIBA DE TODO) -->
+    <div id="section-notas-turno" class="mail-notes-box" style="display: none;">
+      <h4><i class="bi bi-journal-text"></i> Notas de Turno y Pase de Guardia</h4>
+      <div id="notas-turno-content"></div>
+    </div>
 
-    <!-- Detalle de Tareas Visibles -->
-    <h3 style="font-size:1rem; color:#0f172a; margin-bottom:0.75rem;">Detalle de Casos y Tareas Registradas</h3>
-    
-    <div id="mail-tasks-container">
-      <!-- Tareas renderizadas dinámicamente según visibilidad -->
+    <!-- 2. CONTADOR DE RESUMEN DE ACTIVIDADES -->
+    <div class="mail-section">
+      <div class="mail-section-title"><i class="bi bi-speedometer2"></i> Resumen de Estado de Actividades</div>
+      <table class="mail-table" style="text-align: center;">
+        <thead>
+          <tr>
+            <th style="text-align:center;">Total Actividades</th>
+            <th style="text-align:center;">Completadas</th>
+            <th style="text-align:center;">En Progreso</th>
+            <th style="text-align:center;">Pendientes</th>
+            <th style="text-align:center;">Actividades Programadas</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong id="stat-total" style="font-size:1.1rem; color:#2563eb;">0</strong></td>
+            <td><strong id="stat-comp" style="font-size:1.1rem; color:#16a34a;">0</strong></td>
+            <td><strong id="stat-prog" style="font-size:1.1rem; color:#2563eb;">0</strong></td>
+            <td><strong id="stat-pend" style="font-size:1.1rem; color:#d97706;">0</strong></td>
+            <td><strong id="stat-prog-act" style="font-size:1.1rem; color:#7c3aed;">0</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 3. APARTADO: CASOS DEL OPERADOR DEL TURNO -->
+    <div class="mail-section" id="sec-casos-operador">
+      <div class="mail-section-title"><i class="bi bi-person-lines-fill"></i> 1. Casos y Tareas del Turno</div>
+      <table class="mail-table">
+        <thead>
+          <tr>
+            <th style="width: 120px;">Ticket</th>
+            <th style="width: 140px;">Cliente</th>
+            <th style="width: 180px;">Título</th>
+            <th style="width: 130px;">Tipo Tarea</th>
+            <th>Descripción y Acciones</th>
+            <th style="width: 90px; text-align:center;">Estado</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-casos-operador">
+          <tr><td colspan="6" style="text-align:center; color:#64748b;">No hay tareas en este apartado</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 4. APARTADO: ACTIVIDADES PROGRAMADAS (Desglosado) -->
+    <div class="mail-section" id="sec-programados">
+      <div class="mail-section-title"><i class="bi bi-calendar-event"></i> 2. Actividades Programadas del Datacenter</div>
+      
+      <!-- 4.1 Ingresos y Retiros de Equipos -->
+      <h5 style="font-size:0.9rem; color:#1e40af; margin:0.75rem 0 0.35rem;"><i class="bi bi-box-seam"></i> Ingresos / Retiros de Equipos</h5>
+      <table class="mail-table">
+        <thead>
+          <tr>
+            <th style="width: 110px;">Ticket</th>
+            <th style="width: 130px;">Cliente</th>
+            <th style="width: 160px;">Sala / Sitio DC</th>
+            <th style="width: 140px;">Fecha / Hora Inicio</th>
+            <th style="width: 140px;">Fecha / Hora Fin</th>
+            <th>Detalle del Movimiento</th>
+            <th style="width: 85px; text-align:center;">Estado</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-prog-equipos">
+          <tr><td colspan="7" style="text-align:center; color:#64748b;">Sin ingresos/retiros de equipos programados</td></tr>
+        </tbody>
+      </table>
+
+      <!-- 4.2 Accesos de Técnicos -->
+      <h5 style="font-size:0.9rem; color:#1e40af; margin:0.75rem 0 0.35rem;"><i class="bi bi-person-badge"></i> Acceso de Técnicos</h5>
+      <table class="mail-table">
+        <thead>
+          <tr>
+            <th style="width: 110px;">Ticket</th>
+            <th style="width: 130px;">Cliente / Empresa</th>
+            <th style="width: 160px;">Sala / Sitio DC</th>
+            <th style="width: 140px;">Fecha / Hora Inicio</th>
+            <th style="width: 140px;">Fecha / Hora Fin</th>
+            <th>Motivo de Acceso</th>
+            <th style="width: 85px; text-align:center;">Estado</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-prog-tecnicos">
+          <tr><td colspan="7" style="text-align:center; color:#64748b;">Sin accesos de técnicos programados</td></tr>
+        </tbody>
+      </table>
+
+      <!-- 4.3 Mantenimientos -->
+      <h5 style="font-size:0.9rem; color:#1e40af; margin:0.75rem 0 0.35rem;"><i class="bi bi-tools"></i> Mantenimientos</h5>
+      <table class="mail-table">
+        <thead>
+          <tr>
+            <th style="width: 110px;">Ticket</th>
+            <th style="width: 130px;">Cliente / Área</th>
+            <th style="width: 160px;">Sitio (DC / Subestación)</th>
+            <th style="width: 140px;">Inicio (Oblig.)</th>
+            <th style="width: 140px;">Fin (Oblig.)</th>
+            <th>Descripción de Trabajos</th>
+            <th style="width: 85px; text-align:center;">Estado</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-prog-mantenimientos">
+          <tr><td colspan="7" style="text-align:center; color:#64748b;">Sin mantenimientos programados</td></tr>
+        </tbody>
+      </table>
+
+      <!-- 4.4 Otras Tareas Programadas -->
+      <div id="box-prog-otros" style="display: none;">
+        <h5 style="font-size:0.9rem; color:#1e40af; margin:0.75rem 0 0.35rem;"><i class="bi bi-clock-history"></i> Otras Tareas Programadas</h5>
+        <table class="mail-table">
+          <thead>
+            <tr>
+              <th style="width: 110px;">Ticket</th>
+              <th style="width: 130px;">Cliente</th>
+              <th style="width: 160px;">Título</th>
+              <th style="width: 140px;">Horario Programado</th>
+              <th>Descripción</th>
+              <th style="width: 85px; text-align:center;">Estado</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-prog-otros"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 5. APARTADO: ALTA DE CREDENCIALES ESPECIALES -->
+    <div class="mail-section" id="sec-credenciales">
+      <div class="mail-section-title"><i class="bi bi-key-fill"></i> 3. Altas de Credenciales Especiales</div>
+      <table class="mail-table">
+        <thead>
+          <tr>
+            <th style="width: 110px;">Ticket</th>
+            <th style="width: 130px;">Cliente</th>
+            <th style="width: 130px;">Ticket Cliente</th>
+            <th>Personas Asignadas y Códigos Alfanuméricos</th>
+            <th style="width: 90px; text-align:center;">Estado</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-credenciales">
+          <tr><td colspan="5" style="text-align:center; color:#64748b;">No hay altas de credenciales especiales registradas</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 6. APARTADO: MANEJO DE SITIOS EXTERNOS -->
+    <div class="mail-section" id="sec-sitios-externos">
+      <div class="mail-section-title"><i class="bi bi-globe2"></i> 4. Manejo de Sitios Externos</div>
+      <table class="mail-table">
+        <thead>
+          <tr>
+            <th style="width: 110px;">Ticket</th>
+            <th style="width: 130px;">Cliente</th>
+            <th style="width: 130px;">Sitio Externo</th>
+            <th style="width: 120px; text-align:center;">Cant. Contactos</th>
+            <th>Detalle / Asunto de Contacto</th>
+            <th style="width: 90px; text-align:center;">Estado</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-sitios-externos">
+          <tr><td colspan="6" style="text-align:center; color:#64748b;">No hay registros de sitios externos</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 7. APARTADO: TAREAS EXTRAS APLICADAS -->
+    <div class="mail-section" id="sec-tareas-extras">
+      <div class="mail-section-title"><i class="bi bi-plus-circle-dotted"></i> 5. Tareas Extras Aplicadas</div>
+      <table class="mail-table">
+        <thead>
+          <tr>
+            <th style="width: 110px;">Ticket</th>
+            <th style="width: 140px;">Cliente</th>
+            <th style="width: 200px;">Título</th>
+            <th>Descripción y Justificación</th>
+            <th style="width: 90px; text-align:center;">Estado</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-tareas-extras">
+          <tr><td colspan="5" style="text-align:center; color:#64748b;">No hay tareas extras aplicadas</td></tr>
+        </tbody>
+      </table>
     </div>
 
     <!-- Pie de Correo -->

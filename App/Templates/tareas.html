@@ -22,7 +22,7 @@
   <div class="filters-group">
     <div class="search-input-wrapper">
       <i class="bi bi-search"></i>
-      <input type="text" id="search-task" class="form-control" placeholder="Buscar por ticket, título o cliente...">
+      <input type="text" id="search-task" class="form-control" placeholder="Buscar por ticket, título, cliente o persona...">
     </div>
 
     <select id="filter-tipo" class="form-select" style="max-width: 200px;">
@@ -63,7 +63,7 @@
       <thead>
         <tr>
           <th>Ticket / Fecha</th>
-          <th>Título y Descripción</th>
+          <th>Título, Detalles y Credenciales</th>
           <th>Cliente</th>
           <th>Tipo de Tarea</th>
           <th>Estado</th>
@@ -82,7 +82,7 @@
 
 <!-- MODAL: Crear / Editar Tarea -->
 <div id="modal-tarea" class="modal-overlay">
-  <div class="modal-container" style="max-width: 700px;">
+  <div class="modal-container" style="max-width: 720px;">
     <div class="modal-header">
       <h3 id="modal-tarea-title" class="modal-title">Nueva Tarea de Bitácora</h3>
       <button class="modal-close">&times;</button>
@@ -128,43 +128,68 @@
 
         <div class="form-group">
           <label class="form-label" for="descripcion">Descripción y Acciones Realizadas <span style="color:var(--danger)">*</span></label>
-          <textarea id="descripcion" name="descripcion" class="form-control" placeholder="Detalle técnico de la actividad..." required></textarea>
+          <textarea id="descripcion" name="descripcion" class="form-control" rows="3" placeholder="Detalle técnico de la actividad..." required></textarea>
         </div>
 
-        <!-- Contenedor de Campos Extra Dinámicos (ej: credenciales especiales) -->
+        <!-- MÓDULO DEDICADO: ALTA DE CREDENCIALES ESPECIALES MÚLTIPLES -->
+        <div id="credentials-module-box" class="credentials-builder-box" style="display: none;">
+          <div style="font-size:0.875rem; font-weight:700; color:var(--primary); margin-bottom:0.6rem; display:flex; align-items:center; gap:0.4rem;">
+            <i class="bi bi-key-fill"></i> Carga de Credenciales Especiales
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0.75rem;">
+            <label class="form-label">Ticket de Cliente <span style="color:var(--danger)">*</span></label>
+            <input type="text" id="cred-ticket-cliente" class="form-control" placeholder="Ticket asociado del cliente (ej: CLI-TK-8832)">
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+            <span style="font-size:0.8rem; font-weight:600; color:var(--text-secondary);">Personas Asignadas y Códigos:</span>
+            <button type="button" id="btn-add-credential-row" class="btn btn-secondary btn-sm" style="font-size:0.75rem; padding:0.2rem 0.5rem;">
+              <i class="bi bi-plus-lg"></i> Agregar Persona / Credencial
+            </button>
+          </div>
+
+          <div id="credentials-rows-container" class="credentials-scroll-container">
+            <!-- Filas dinámicas de credenciales -->
+          </div>
+        </div>
+
+        <!-- Contenedor de Campos Extra Dinámicos Genéricos -->
         <div id="dynamic-fields-container" style="display:none; background: rgba(15, 23, 42, 0.4); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 1rem;">
         </div>
 
-        <!-- Switch Actividad Programada -->
-        <div class="form-group" style="margin-bottom: 0.5rem;">
-          <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; font-weight: 600; cursor: pointer;">
-            <input type="checkbox" id="es_actividad_programada">
-            <span><i class="bi bi-calendar-event"></i> Es una Actividad Programada (Visible para todos los operadores en el mail de resumen)</span>
-          </label>
+        <!-- Sección de Actividad Programada & Fechas -->
+        <div id="programada-section-box" style="background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.85rem; margin-bottom: 1rem;">
+          <div class="form-group" style="margin-bottom: 0.5rem;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; font-weight: 600; cursor: pointer;">
+              <input type="checkbox" id="es_actividad_programada">
+              <span id="label-actividad-programada"><i class="bi bi-calendar-event"></i> Es una Actividad Programada (Visible para todo el DOC en el reporte)</span>
+            </label>
+          </div>
+
+          <!-- Fechas de programación -->
+          <div id="fechas-programadas-box" class="grid-2" style="display: none; margin-top: 0.5rem;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" id="label-fecha-inicio">Fecha / Hora Inicio <span style="color:var(--danger)">*</span></label>
+              <input type="datetime-local" id="fecha_programada_inicio" class="form-control">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" id="label-fecha-fin">Fecha / Hora Fin</label>
+              <input type="datetime-local" id="fecha_programada_fin" class="form-control">
+            </div>
+          </div>
         </div>
 
-        <!-- Fechas de programación -->
-        <div id="fechas-programadas-box" class="grid-2" style="display: none; margin-bottom: 1rem; background: var(--bg-main); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
-          <div class="form-group" style="margin-bottom: 0;">
-            <label class="form-label">Fecha / Hora Inicio</label>
-            <input type="datetime-local" id="fecha_programada_inicio" class="form-control">
-          </div>
-          <div class="form-group" style="margin-bottom: 0;">
-            <label class="form-label">Fecha / Hora Fin</label>
-            <input type="datetime-local" id="fecha_programada_fin" class="form-control">
-          </div>
-        </div>
-
-        <!-- Subtareas Builder -->
+        <!-- Subtareas Builder con Scroll y Comentarios de Operador -->
         <div class="subtasks-builder-box">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
-            <span style="font-size:0.825rem; font-weight:600; color:var(--text-secondary);"><i class="bi bi-list-nested"></i> Subtareas Opcionales</span>
+            <span style="font-size:0.825rem; font-weight:600; color:var(--text-secondary);"><i class="bi bi-list-nested"></i> Subtareas y Comentarios del Operador</span>
             <button type="button" id="btn-add-subtask-row" class="btn btn-secondary btn-sm" style="font-size:0.75rem; padding:0.2rem 0.5rem;">
               <i class="bi bi-plus"></i> Agregar Subtarea
             </button>
           </div>
-          <div id="subtasks-rows-container">
-            <!-- Filas dinámicas de subtareas -->
+          <div id="subtasks-rows-container" class="subtasks-scroll-container">
+            <!-- Filas dinámicas de subtareas con descripción/comentarios -->
           </div>
         </div>
 
@@ -181,7 +206,7 @@
 
 <!-- MODAL: Detalle de Tarea y Gestión de Subtareas -->
 <div id="modal-detalle-tarea" class="modal-overlay">
-  <div class="modal-container" style="max-width: 650px;">
+  <div class="modal-container" style="max-width: 680px;">
     <div class="modal-header">
       <h3 class="modal-title"><i class="bi bi-ticket-detailed"></i> Detalle de Tarea: <span id="detalle-ticket" style="color:var(--primary);"></span></h3>
       <button class="modal-close">&times;</button>
@@ -192,7 +217,7 @@
         <div><strong>Cliente:</strong> <span id="detalle-cliente"></span></div>
         <div><strong>Tipo:</strong> <span id="detalle-tipo" style="text-transform:capitalize;"></span></div>
         <div><strong>Estado:</strong> <span id="detalle-estado"></span></div>
-        <div><strong>Operador Creador:</strong> <span id="detalle-operador"></span></div>
+        <div><strong>Operador:</strong> <span id="detalle-operador"></span></div>
       </div>
 
       <div class="card" style="padding:0.75rem; background:#0f172a; margin-bottom:1rem;">
@@ -200,23 +225,23 @@
         <div id="detalle-descripcion" style="font-size:0.875rem; white-space:pre-wrap;"></div>
       </div>
 
-      <!-- Campos Dinámicos Extra -->
+      <!-- Campos Dinámicos Extra & Credenciales -->
       <div class="card" style="padding:0.75rem; background:#0f172a; margin-bottom:1rem;">
-        <strong style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-bottom:0.25rem;">Campos Específicos:</strong>
-        <div id="detalle-campos-extra" style="font-size:0.85rem; display:flex; flex-direction:column; gap:0.25rem;"></div>
+        <strong style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-bottom:0.25rem;">Campos Específicos / Credenciales:</strong>
+        <div id="detalle-campos-extra" style="font-size:0.85rem; display:flex; flex-direction:column; gap:0.35rem;"></div>
       </div>
 
-      <!-- Subtareas Registradas -->
+      <!-- Subtareas Registradas con scroll -->
       <h4 style="font-size:0.9rem; font-weight:700; margin-bottom:0.5rem; display:flex; align-items:center; gap:0.4rem;">
-        <i class="bi bi-list-nested"></i> Subtareas Asociadas
+        <i class="bi bi-list-nested"></i> Subtareas y Comentarios Asociados
       </h4>
-      <div id="detalle-subtareas-list">
+      <div id="detalle-subtareas-list" class="subtasks-scroll-container" style="max-height: 180px;">
         <!-- Lista de subtareas -->
       </div>
 
       <!-- Formulario para agregar subtarea rápida -->
       <form id="form-nueva-subtarea" onsubmit="agregarSubtareaDesdeDetalle(event)" style="margin-top:1rem; padding:0.75rem; background:rgba(15, 23, 42, 0.4); border:1px solid var(--border-color); border-radius:var(--radius-sm);">
-        <div style="font-size:0.8rem; font-weight:600; color:var(--text-secondary); margin-bottom:0.4rem;">+ Agregar nueva subtarea a este caso</div>
+        <div style="font-size:0.8rem; font-weight:600; color:var(--text-secondary); margin-bottom:0.4rem;">+ Agregar nueva subtarea / comentario a este caso</div>
         <div class="grid-2" style="margin-bottom:0.4rem;">
           <input type="text" id="sub-ticket-input" class="form-control form-control-sm" placeholder="Ticket subtarea (ej: SUB-01)" required>
           <input type="text" id="sub-titulo-input" class="form-control form-control-sm" placeholder="Título subtarea" required>
@@ -228,7 +253,7 @@
             <option value="completada">Completada</option>
             <option value="cancelada">Cancelada</option>
           </select>
-          <input type="text" id="sub-desc-input" class="form-control form-control-sm" placeholder="Descripción opcional">
+          <input type="text" id="sub-desc-input" class="form-control form-control-sm" placeholder="Comentarios u observaciones de avance">
         </div>
         <button type="submit" class="btn btn-primary btn-sm" style="width:100%;">
           <i class="bi bi-plus-lg"></i> Agregar Subtarea

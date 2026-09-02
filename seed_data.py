@@ -5,7 +5,7 @@ from App import create_app
 from App.extensions import db
 from App.Models.usuario import Usuario
 from App.Models.region import Region
-from App.Models.region_config import RegionConfig, TIPOS_TAREA_DEFAULT, CAMPOS_EXTRA_DEFAULT, TURNOS_DEFAULT
+from App.Models.region_config import RegionConfig, TIPOS_TAREA_DEFAULT, CAMPOS_EXTRA_DEFAULT, TURNOS_DEFAULT, SALAS_DEFAULT
 from App.Models.bitacora import Bitacora
 from App.Models.tarea import Tarea
 from App.Models.subtarea import Subtarea
@@ -31,12 +31,13 @@ def seed():
             db.session.add(region_ar)
             db.session.flush()
 
-            # Configuración para Buenos Aires (Habilita todos los tipos de tarea)
+            # Configuración para Buenos Aires
             config_ar = RegionConfig(
                 region_id=region_ar.id,
                 tipos_tarea_habilitados=[t["id"] for t in TIPOS_TAREA_DEFAULT],
                 campos_extra=CAMPOS_EXTRA_DEFAULT,
                 turnos_config=TURNOS_DEFAULT,
+                salas_datacenter=SALAS_DEFAULT,
                 config_ui={"titulo_bitacora": "Bitacora DOC Buenos Aires"}
             )
             db.session.add(config_ar)
@@ -52,15 +53,19 @@ def seed():
             db.session.add(region_cl)
             db.session.flush()
 
-            # Configuración para Santiago (personalizada con subconjunto de tareas)
+            # Configuración para Santiago
             config_cl = RegionConfig(
                 region_id=region_cl.id,
                 tipos_tarea_habilitados=[
-                    "manos_remotas", "manos_inteligentes", "backup", "restore", 
-                    "snapshot", "mantenimiento", "incidente", "alta_credencial_especial"
+                    "manos_remotas", "manos_inteligentes", "acceso_equipos", "retiro_equipos",
+                    "acceso_tecnicos", "backup", "restore", "snapshot", "mantenimiento", 
+                    "incidente", "manejo_sitio_externo", "alta_credencial_especial"
                 ],
                 campos_extra=CAMPOS_EXTRA_DEFAULT,
                 turnos_config=TURNOS_DEFAULT,
+                salas_datacenter=[
+                    "Sala Principal Santiago", "Meet-Me Room SCL", "Subestación Eléctrica SCL"
+                ],
                 config_ui={"titulo_bitacora": "Bitacora DOC Santiago"}
             )
             db.session.add(config_cl)
@@ -132,7 +137,8 @@ def seed():
                 fecha=date.today(),
                 turno='manana',
                 estado='abierta',
-                supervisor_id=usuarios_creados["supervisor_ar"].id
+                supervisor_id=usuarios_creados["supervisor_ar"].id,
+                observaciones_cierre="Sin cortes imprevistos de suministro. Se ejecuto con exito la conmutacion de generador de prueba."
             )
             db.session.add(bitacora_hoy)
             db.session.flush()
@@ -142,94 +148,155 @@ def seed():
         # 4. Crear Tareas de Prueba representativas
         print("4. Verificando Tareas y Subtareas de ejemplo...")
         op_user = usuarios_creados["op_buenosaires"]
+        sup_user = usuarios_creados["supervisor_ar"]
+        ahora = datetime.utcnow()
         
-        if Tarea.query.filter_by(bitacora_id=bitacora_hoy.id).count() == 0:
-            # Tarea 1: Alta de Credencial Especial (con campos extra requeridos)
-            t1 = Tarea(
-                bitacora_id=bitacora_hoy.id,
-                operador_id=op_user.id,
-                tipo_tarea="alta_credencial_especial",
-                ticket="SEC-8921",
-                titulo="Habilitacion de tarjeta magnetica para datacenter sala A",
-                cliente="Banco Nacional",
-                estado="completada",
-                descripcion="Se proceso la solicitud de acceso nivel 3 para personal externo de mantenimiento electrico.",
-                es_actividad_programada=False,
-                campos_extra={
-                    "persona_propietaria": "Gonzalo Mendez",
-                    "ticket_cliente": "BN-TK-4421",
-                    "codigo_alfanumerico": "CRD-9902-SEC"
-                }
-            )
-            db.session.add(t1)
+        # Limpiar tareas previas para recrear con el esquema enriquecido
+        Tarea.query.filter_by(bitacora_id=bitacora_hoy.id).delete()
+        db.session.commit()
 
-            # Tarea 2: Backup con Subtareas
-            t2 = Tarea(
-                bitacora_id=bitacora_hoy.id,
-                operador_id=op_user.id,
-                tipo_tarea="backup",
-                ticket="BKP-4012",
-                titulo="Backup Full Semanal de Base de Datos Core",
-                cliente="Telecomunicaciones Sur",
-                estado="en_progreso",
-                descripcion="Ejecucion de snapshot y respaldo en cinta LTO-8 de base de datos Oracle RAC.",
-                es_actividad_programada=False,
-                campos_extra={}
-            )
-            db.session.add(t2)
-            db.session.flush()
+        # Tarea 1: Alta de Credenciales Especiales Múltiples
+        t1 = Tarea(
+            bitacora_id=bitacora_hoy.id,
+            operador_id=op_user.id,
+            tipo_tarea="alta_credencial_especial",
+            ticket="SEC-8921",
+            titulo="Habilitacion de credenciales biometricas para Datacenter Sala A",
+            cliente="Banco Nacional",
+            estado="completada",
+            descripcion="Se procesaron las tarjetas de proximidad y biometricos para tecnicos de auditoria externa.",
+            es_actividad_programada=False,
+            campos_extra={
+                "ticket_cliente": "BN-TK-4421",
+                "credenciales_lista": [
+                    {"persona_propietaria": "Gonzalo Mendez", "codigo_alfanumerico": "CRD-9902-SEC"},
+                    {"persona_propietaria": "Mariana Lopez", "codigo_alfanumerico": "CRD-9903-SEC"},
+                    {"persona_propietaria": "Lucas Benitez", "codigo_alfanumerico": "CRD-9904-SEC"}
+                ]
+            }
+        )
 
-            # Subtareas para T2
-            sub1 = Subtarea(
-                tarea_id=t2.id,
-                ticket="BKP-4012-A",
-                titulo="Verificacion de espacio en Storage SAN",
-                estado="completada",
-                descripcion="Espacio libre verificado: 14.2 TB disponibles."
-            )
-            sub2 = Subtarea(
-                tarea_id=t2.id,
-                ticket="BKP-4012-B",
-                titulo="Ejecucion de job de volcado RMAN",
-                estado="en_progreso",
-                descripcion="Job iniciado a las 08:30 con 6 canales paralelos."
-            )
-            db.session.add_all([sub1, sub2])
+        # Tarea 2: Ingreso de Equipos (Programado, inicio oblig., fin opcional, sala DC)
+        t2 = Tarea(
+            bitacora_id=bitacora_hoy.id,
+            operador_id=op_user.id,
+            tipo_tarea="acceso_equipos",
+            ticket="EQ-5100",
+            titulo="Ingreso y despaletizado de 4 Switches Cisco Nexus 9000",
+            cliente="Telecomunicaciones Sur",
+            estado="en_progreso",
+            descripcion="Ingreso por darsena de carga y traslado hacia sala de racks.",
+            es_actividad_programada=True,
+            fecha_programada_inicio=ahora - timedelta(hours=1),
+            fecha_programada_fin=None, # Fin opcional
+            campos_extra={
+                "sala_datacenter": "Sala B - Racks de Red"
+            }
+        )
 
-            # Tarea 3: Actividad Programada (Visible para todos en el mail)
-            ahora = datetime.utcnow()
-            t3 = Tarea(
-                bitacora_id=bitacora_hoy.id,
-                operador_id=usuarios_creados["supervisor_ar"].id,
-                tipo_tarea="mantenimiento",
-                ticket="MNT-2026-09",
-                titulo="Ventana de Mantenimiento de UPS Central y Generador Diesel",
-                cliente="Infraestructura Interna DC",
-                estado="pendiente",
-                descripcion="Corte preventivo programado y testeo de conmutacion automatica de generadores de emergencia.",
-                es_actividad_programada=True,
-                fecha_programada_inicio=ahora + timedelta(hours=2),
-                fecha_programada_fin=ahora + timedelta(hours=4),
-                campos_extra={}
-            )
-            db.session.add(t3)
+        # Tarea 3: Acceso de Técnicos
+        t3 = Tarea(
+            bitacora_id=bitacora_hoy.id,
+            operador_id=op_user.id,
+            tipo_tarea="acceso_tecnicos",
+            ticket="ACC-209",
+            titulo="Acceso de cuadrilla de fibra optica para empalme en ODF",
+            cliente="Carrier Global Telecom",
+            estado="completada",
+            descripcion="Personal acreditado de Level3 / Lumen realizando medicion reflectometrica.",
+            es_actividad_programada=True,
+            fecha_programada_inicio=ahora - timedelta(hours=3),
+            fecha_programada_fin=ahora - timedelta(hours=1),
+            campos_extra={
+                "sala_datacenter": "Meet-Me Room (MMR)",
+                "empresa_tecnico": "Lumen Technologies"
+            }
+        )
 
-            # Tarea 4: Manos Remotas
-            t4 = Tarea(
-                bitacora_id=bitacora_hoy.id,
-                operador_id=op_user.id,
-                tipo_tarea="manos_remotas",
-                ticket="RH-5510",
-                titulo="Reinicio fisico de servidor rack 12 unidad 4",
-                cliente="Fintech Global",
-                estado="completada",
-                descripcion="Se verifico led de estado en panel frontal y se procedio a ciclo de energia manual.",
-                es_actividad_programada=False,
-                campos_extra={}
-            )
-            db.session.add(t4)
+        # Tarea 4: Mantenimiento Programado (Inicio y Fin obligatorios, sitio DC/Subestacion)
+        t4 = Tarea(
+            bitacora_id=bitacora_hoy.id,
+            operador_id=sup_user.id,
+            tipo_tarea="mantenimiento",
+            ticket="MNT-2026-09",
+            titulo="Mantenimiento preventivo semestral de Celda de Media Tension",
+            cliente="Infraestructura Interna DC",
+            estado="pendiente",
+            descripcion="Pruebas de aislamiento y revision de transformadores de aislamiento.",
+            es_actividad_programada=True,
+            fecha_programada_inicio=ahora + timedelta(hours=2),
+            fecha_programada_fin=ahora + timedelta(hours=5),
+            campos_extra={
+                "sitio_mantenimiento": "Subestación Transformadora Principal"
+            }
+        )
 
-            db.session.commit()
+        # Tarea 5: Manejo de Sitios Externos (Chile / Miami + cantidad contactos)
+        t5 = Tarea(
+            bitacora_id=bitacora_hoy.id,
+            operador_id=op_user.id,
+            tipo_tarea="manejo_sitio_externo",
+            ticket="EXT-104",
+            titulo="Coordinacion de enlace transandino y verificacion de latencia",
+            cliente="Red Corporativa DC",
+            estado="en_progreso",
+            descripcion="Monitoreo conjunto con NOC regional por fluctuacion en fibra submarina.",
+            es_actividad_programada=False,
+            campos_extra={
+                "sitio_externo": "Chile",
+                "cantidad_contactos": 4
+            }
+        )
+
+        # Tarea 6: Tarea Extra Aplicada
+        t6 = Tarea(
+            bitacora_id=bitacora_hoy.id,
+            operador_id=op_user.id,
+            tipo_tarea="tarea_extra",
+            ticket="EXTR-88",
+            titulo="Reetiquetado de patchcords en Rack 14 fila central",
+            cliente="Fintech Alpha",
+            estado="completada",
+            descripcion="Reordenamiento estético y normalización de cableado UTP Cat6A.",
+            es_actividad_programada=False,
+            campos_extra={}
+        )
+
+        # Tarea 7: Backup con Subtareas y Comentarios
+        t7 = Tarea(
+            bitacora_id=bitacora_hoy.id,
+            operador_id=op_user.id,
+            tipo_tarea="backup",
+            ticket="BKP-4012",
+            titulo="Backup Full Semanal de Base de Datos Core",
+            cliente="Telecomunicaciones Sur",
+            estado="en_progreso",
+            descripcion="Ejecucion de snapshot y respaldo en cinta LTO-8 de base de datos Oracle RAC.",
+            es_actividad_programada=False,
+            campos_extra={}
+        )
+
+        db.session.add_all([t1, t2, t3, t4, t5, t6, t7])
+        db.session.flush()
+
+        # Subtareas con comentarios
+        sub1 = Subtarea(
+            tarea_id=t7.id,
+            ticket="BKP-4012-A",
+            titulo="Verificacion de espacio en Storage SAN",
+            estado="completada",
+            descripcion="Operador: Espacio libre verificado: 14.2 TB disponibles sin alarmas."
+        )
+        sub2 = Subtarea(
+            tarea_id=t7.id,
+            ticket="BKP-4012-B",
+            titulo="Ejecucion de job de volcado RMAN",
+            estado="en_progreso",
+            descripcion="Operador: Job iniciado a las 08:30 con 6 canales paralelos, velocidad 420MB/s."
+        )
+        db.session.add_all([sub1, sub2])
+
+        db.session.commit()
 
         print("[OK] Seed Data cargada exitosamente!")
         print("Usuarios disponibles:")

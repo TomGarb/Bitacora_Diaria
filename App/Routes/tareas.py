@@ -129,8 +129,15 @@ def crear_tarea():
             db.session.flush()
         bitacora_id = bitacora.id
 
-    # Parseo de fechas programadas si aplica
+    # Tipo de tarea y reglas específicas
+    tipo_tarea = data.get('tipo_tarea')
     es_programada = bool(data.get('es_actividad_programada', False))
+    
+    # Equipos, técnicos y mantenimientos son siempre programados por definición
+    if tipo_tarea in ['acceso_equipos', 'retiro_equipos', 'acceso_tecnicos', 'mantenimiento']:
+        es_programada = True
+
+    # Parseo y validación de fechas
     inicio_prog = None
     fin_prog = None
     if es_programada:
@@ -145,20 +152,54 @@ def crear_tarea():
             except Exception:
                 pass
 
+        # Validaciones específicas de fechas por tipo
+        if tipo_tarea in ['acceso_equipos', 'retiro_equipos', 'acceso_tecnicos'] and not inicio_prog:
+            return jsonify({'error': 'La fecha y hora de inicio es obligatoria para ingresos/retiros de equipos y acceso de técnicos'}), 400
+        
+        if tipo_tarea == 'mantenimiento' and (not inicio_prog or not fin_prog):
+            return jsonify({'error': 'Las fechas y horas de inicio Y de finalización son obligatorias para Mantenimientos'}), 400
+
     # Campos extra dinámicos
     campos_extra = data.get('campos_extra', {})
     
-    # Validación específica para alta_credencial_especial si aplica
-    if data.get('tipo_tarea') == 'alta_credencial_especial':
-        # Validar persona_propietaria, ticket_cliente, codigo_alfanumerico
-        for req_field in ['persona_propietaria', 'ticket_cliente', 'codigo_alfanumerico']:
-            if not campos_extra.get(req_field):
-                return jsonify({'error': f'El campo extra "{req_field}" es requerido para Alta de Credencial Especial'}), 400
+    # 1. Validación específica para alta_credencial_especial
+    if tipo_tarea == 'alta_credencial_especial':
+        if not campos_extra.get('ticket_cliente'):
+            return jsonify({'error': 'El Ticket de Cliente es obligatorio para Alta de Credenciales Especiales'}), 400
+        
+        credenciales_lista = campos_extra.get('credenciales_lista', [])
+        # Soporte para compatibilidad si venían en campos planos o en lista
+        if not credenciales_lista and campos_extra.get('persona_propietaria') and campos_extra.get('codigo_alfanumerico'):
+            credenciales_lista = [{
+                'persona_propietaria': campos_extra.get('persona_propietaria'),
+                'codigo_alfanumerico': campos_extra.get('codigo_alfanumerico')
+            }]
+            campos_extra['credenciales_lista'] = credenciales_lista
+
+        if not credenciales_lista or len(credenciales_lista) == 0:
+            return jsonify({'error': 'Debe ingresar al menos una credencial (Persona asignada y Código Alfanumérico)'}), 400
+
+    # 2. Validación de salas para equipos y técnicos
+    if tipo_tarea in ['acceso_equipos', 'retiro_equipos', 'acceso_tecnicos']:
+        if not campos_extra.get('sala_datacenter'):
+            return jsonify({'error': 'Debe especificar la Sala de Datacenter donde ingresan/retiran equipos o técnicos'}), 400
+
+    # 3. Validación de sitio para mantenimientos
+    if tipo_tarea == 'mantenimiento':
+        if not campos_extra.get('sitio_mantenimiento'):
+            return jsonify({'error': 'Debe especificar el Sitio de Trabajo (DC o Subestación) para el Mantenimiento'}), 400
+
+    # 4. Validación para manejo de sitios externos
+    if tipo_tarea == 'manejo_sitio_externo':
+        if not campos_extra.get('sitio_externo'):
+            return jsonify({'error': 'Debe especificar el Sitio Externo (ej: Chile, Miami)'}), 400
+        if campos_extra.get('cantidad_contactos') is None or str(campos_extra.get('cantidad_contactos')).strip() == '':
+            return jsonify({'error': 'Debe indicar la cantidad de contactos que tuvieron con nosotros'}), 400
 
     nueva_tarea = Tarea(
         bitacora_id=bitacora_id,
         operador_id=user.id,
-        tipo_tarea=data.get('tipo_tarea'),
+        tipo_tarea=tipo_tarea,
         ticket=data.get('ticket').strip(),
         titulo=data.get('titulo').strip(),
         cliente=data.get('cliente').strip(),

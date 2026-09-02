@@ -1,5 +1,5 @@
 /**
- * Tareas JS - Gestión dinámica de tareas y subtareas por región
+ * Tareas JS - Gestión dinámica de tareas, múltiples credenciales y subtareas
  */
 
 let regionConfig = null;
@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupEventListeners();
 });
 
-// 1. Cargar Configuración Dinámica de la Región
+// 1. Cargar Configuración Dinámica de la Región (Tipos, Salas, Turnos, Campos)
 async function cargarConfiguracionRegion() {
   try {
     const regionId = document.getElementById('region-id-holder')?.value;
@@ -28,7 +28,7 @@ async function cargarConfiguracionRegion() {
   }
 }
 
-// 2. Actualizar el dropdown de tipos según los tipos habilitados por el supervisor
+// 2. Dropdown de tipos según configuración de la región
 function actualizarSelectorTipos() {
   const select = document.getElementById('tipo_tarea');
   const filterSelect = document.getElementById('filter-tipo');
@@ -37,12 +37,10 @@ function actualizarSelectorTipos() {
   const habilitados = regionConfig.tipos_tarea_habilitados || [];
   const catalogo = regionConfig.catalogo_completo_tipos || [];
 
-  // Limpiar y llenar selector modal
   select.innerHTML = '<option value="">-- Seleccione Tipo de Tarea --</option>';
   if (filterSelect) filterSelect.innerHTML = '<option value="">Todos los tipos</option>';
 
   catalogo.forEach(item => {
-    // Si está habilitado para esta región
     if (habilitados.includes(item.id)) {
       const opt = document.createElement('option');
       opt.value = item.id;
@@ -59,17 +57,97 @@ function actualizarSelectorTipos() {
   });
 }
 
-// 3. Renderizar campos extra al cambiar el tipo de tarea
+// 3. Renderizar campos dinámicos y comportamientos al cambiar el tipo de tarea
 function onTipoTareaChange() {
   const tipo = document.getElementById('tipo_tarea').value;
   const container = document.getElementById('dynamic-fields-container');
-  if (!container || !regionConfig) return;
+  const credBox = document.getElementById('credentials-module-box');
+  const progCheckbox = document.getElementById('es_actividad_programada');
+  const datesBox = document.getElementById('fechas-programadas-box');
+  const labelFin = document.getElementById('label-fecha-fin');
 
-  const camposExtra = (regionConfig.campos_extra && regionConfig.campos_extra[tipo]) || [];
-  renderDynamicFields(container, camposExtra);
+  if (!tipo) {
+    if (credBox) credBox.style.display = 'none';
+    if (container) container.style.display = 'none';
+    return;
+  }
+
+  // Comportamiento de Actividad Programada por Tipo
+  const esSiempreProgramada = ['acceso_equipos', 'retiro_equipos', 'acceso_tecnicos', 'mantenimiento'].includes(tipo);
+  
+  if (esSiempreProgramada) {
+    progCheckbox.checked = true;
+    progCheckbox.disabled = true;
+    datesBox.style.display = 'grid';
+
+    if (tipo === 'mantenimiento') {
+      labelFin.innerHTML = 'Fecha / Hora Fin <span style="color:var(--danger)">* (Obligatoria)</span>';
+      document.getElementById('fecha_programada_fin').required = true;
+    } else {
+      labelFin.innerHTML = 'Fecha / Hora Fin <span style="color:var(--text-muted); font-size:0.75rem;">(Opcional)</span>';
+      document.getElementById('fecha_programada_fin').required = false;
+    }
+  } else {
+    progCheckbox.disabled = false;
+    datesBox.style.display = progCheckbox.checked ? 'grid' : 'none';
+    labelFin.innerHTML = 'Fecha / Hora Fin';
+    document.getElementById('fecha_programada_fin').required = false;
+  }
+
+  // MÓDULO DEDICADO: ALTA DE CREDENCIALES ESPECIALES MÚLTIPLES
+  if (tipo === 'alta_credencial_especial') {
+    credBox.style.display = 'block';
+    if (container) container.style.display = 'none';
+    // Si no tiene filas, agregar una inicial
+    if (document.querySelectorAll('.credential-row').length === 0) {
+      agregarFilaCredencial();
+    }
+    return;
+  } else {
+    credBox.style.display = 'none';
+  }
+
+  // OTROS CAMPOS DINÁMICOS (Salas de Datacenter, Sitios externos, etc.)
+  let campos = (regionConfig && regionConfig.campos_extra && regionConfig.campos_extra[tipo]) || [];
+  
+  // Si es equipos/técnicos/mantenimiento, inyectar salas actualizadas de la región si es select
+  if (['acceso_equipos', 'retiro_equipos', 'acceso_tecnicos', 'mantenimiento'].includes(tipo)) {
+    const salas = regionConfig.salas_datacenter || [];
+    campos = campos.map(c => {
+      if (c.nombre === 'sala_datacenter' || c.nombre === 'sitio_mantenimiento') {
+        return { ...c, opciones: salas };
+      }
+      return c;
+    });
+  }
+
+  renderDynamicFields(container, campos);
 }
 
-// 4. Cargar lista de tareas
+// 4. Múltiples Credenciales
+function agregarFilaCredencial(persona = '', codigo = '') {
+  const container = document.getElementById('credentials-rows-container');
+  if (!container) return;
+
+  const row = document.createElement('div');
+  row.className = 'credential-row';
+  row.innerHTML = `
+    <div>
+      <input type="text" class="form-control form-control-sm cred-persona" placeholder="Nombre y Apellido de la persona" value="${persona}" required>
+    </div>
+    <div>
+      <input type="text" class="form-control form-control-sm cred-codigo" placeholder="Código alfanumérico (ej: CRD-9901)" value="${codigo}" required>
+    </div>
+    <div>
+      <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.credential-row').remove()" style="padding:0.25rem 0.4rem;" title="Eliminar fila">
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
+  `;
+  container.appendChild(row);
+}
+
+// 5. Cargar lista de tareas
 async function cargarTareas() {
   const tbody = document.getElementById('tareas-tbody');
   if (!tbody) return;
@@ -98,7 +176,7 @@ async function cargarTareas() {
   }
 }
 
-// 5. Renderizar tabla de tareas
+// 6. Renderizar tabla de tareas
 function renderTablaTareas(tareas) {
   const tbody = document.getElementById('tareas-tbody');
   if (!tbody) return;
@@ -113,12 +191,27 @@ function renderTablaTareas(tareas) {
     const tr = document.createElement('tr');
     const tipoLabel = t.tipo_tarea.replace(/_/g, ' ');
 
-    // Construir tags de campos extra (ej: credenciales especiales)
+    // Construir tags de campos extra y credenciales múltiples
     let extraFieldsHtml = '';
-    if (t.campos_extra && Object.keys(t.campos_extra).length > 0) {
+    if (t.tipo_tarea === 'alta_credencial_especial' && t.campos_extra) {
+      const ticketCli = t.campos_extra.ticket_cliente ? `Ticket Cliente: <strong>${t.campos_extra.ticket_cliente}</strong>` : '';
+      const creds = t.campos_extra.credenciales_lista || [];
+      
+      let listaPersonas = '';
+      if (creds.length > 0) {
+        listaPersonas = creds.map(c => `<span class="extra-field-tag"><i class="bi bi-person"></i> ${c.persona_propietaria} (<strong>${c.codigo_alfanumerico}</strong>)</span>`).join(' ');
+      } else if (t.campos_extra.persona_propietaria) {
+        listaPersonas = `<span class="extra-field-tag"><i class="bi bi-person"></i> ${t.campos_extra.persona_propietaria} (<strong>${t.campos_extra.codigo_alfanumerico || ''}</strong>)</span>`;
+      }
+
+      extraFieldsHtml = `
+        <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:0.3rem;">${ticketCli}</div>
+        <div class="extra-fields-badge-box">${listaPersonas}</div>
+      `;
+    } else if (t.campos_extra && Object.keys(t.campos_extra).length > 0) {
       extraFieldsHtml = '<div class="extra-fields-badge-box">';
       for (const [k, v] of Object.entries(t.campos_extra)) {
-        if (v) {
+        if (v && typeof v !== 'object') {
           const kLabel = k.replace(/_/g, ' ');
           extraFieldsHtml += `<span class="extra-field-tag" title="${kLabel}: ${v}"><strong>${kLabel}:</strong> ${v}</span>`;
         }
@@ -128,12 +221,12 @@ function renderTablaTareas(tareas) {
 
     // Badge subtareas
     const subtareasBadge = t.total_subtareas > 0 
-      ? `<span class="subtask-badge-count" title="${t.total_subtareas} subtareas"><i class="bi bi-list-nested"></i> ${t.total_subtareas}</span>` 
+      ? `<span class="subtask-badge-count" title="${t.total_subtareas} subtareas / comentarios"><i class="bi bi-list-nested"></i> ${t.total_subtareas}</span>` 
       : '';
 
     // Fecha programada
     const programadaHtml = t.es_actividad_programada
-      ? `<span class="badge badge-programada" title="${t.fecha_programada_inicio || ''} a ${t.fecha_programada_fin || ''}"><i class="bi bi-clock-history"></i> ${t.fecha_programada_inicio ? t.fecha_programada_inicio.split(' ')[1] : 'Programada'}</span>`
+      ? `<span class="badge badge-programada" title="${t.fecha_programada_inicio || ''} ${t.fecha_programada_fin ? 'a ' + t.fecha_programada_fin : ''}"><i class="bi bi-clock-history"></i> ${t.fecha_programada_inicio ? t.fecha_programada_inicio.split(' ')[1] : 'Programada'}</span>`
       : '<span style="color:var(--text-muted); font-size:0.75rem;">No</span>';
 
     tr.innerHTML = `
@@ -171,7 +264,7 @@ function renderTablaTareas(tareas) {
   });
 }
 
-// 6. Setup de Event Listeners
+// 7. Setup de Event Listeners
 function setupEventListeners() {
   document.getElementById('tipo_tarea')?.addEventListener('change', onTipoTareaChange);
   
@@ -194,14 +287,17 @@ function setupEventListeners() {
     searchTimeout = setTimeout(cargarTareas, 350);
   });
 
-  // Botón Agregar Subtarea en modal
-  document.getElementById('btn-add-subtask-row')?.addEventListener('click', agregarFilaSubtarea);
+  // Botón agregar credencial
+  document.getElementById('btn-add-credential-row')?.addEventListener('click', () => agregarFilaCredencial());
+
+  // Botón Agregar Subtarea
+  document.getElementById('btn-add-subtask-row')?.addEventListener('click', () => agregarFilaSubtarea());
 
   // Formulario Tarea Submit
   document.getElementById('form-tarea')?.addEventListener('submit', guardarTarea);
 }
 
-// 7. Subtareas dinámicas en Modal
+// 8. Subtareas en Modal de Creación/Edición
 function agregarFilaSubtarea(ticket = '', titulo = '', estado = 'pendiente', desc = '') {
   const container = document.getElementById('subtasks-rows-container');
   if (!container) return;
@@ -217,9 +313,12 @@ function agregarFilaSubtarea(ticket = '', titulo = '', estado = 'pendiente', des
       <option value="completada" ${estado === 'completada' ? 'selected' : ''}>Completada</option>
       <option value="cancelada" ${estado === 'cancelada' ? 'selected' : ''}>Cancelada</option>
     </select>
-    <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()" style="padding:0.25rem 0.4rem;">
+    <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.subtask-row').remove()" style="padding:0.25rem 0.4rem;">
       <i class="bi bi-x"></i>
     </button>
+    <div class="subtask-row-desc">
+      <input type="text" class="form-control form-control-sm sub-desc" placeholder="Comentarios u observaciones de avance del operador..." value="${desc}">
+    </div>
   `;
   container.appendChild(row);
 }
@@ -229,8 +328,11 @@ function abrirModalNuevaTarea() {
   document.getElementById('form-tarea').reset();
   document.getElementById('modal-tarea-title').textContent = 'Nueva Tarea de Bitácora';
   document.getElementById('subtasks-rows-container').innerHTML = '';
+  document.getElementById('credentials-rows-container').innerHTML = '';
+  document.getElementById('credentials-module-box').style.display = 'none';
   document.getElementById('dynamic-fields-container').innerHTML = '';
   document.getElementById('fechas-programadas-box').style.display = 'none';
+  document.getElementById('es_actividad_programada').disabled = false;
   openModal('modal-tarea');
 }
 
@@ -246,6 +348,9 @@ function editarTarea(id) {
   document.getElementById('estado').value = tarea.estado;
   document.getElementById('descripcion').value = tarea.descripcion;
   document.getElementById('tipo_tarea').value = tarea.tipo_tarea;
+
+  // Disparar cambio de tipo
+  onTipoTareaChange();
   
   // Actividad programada
   const progCheckbox = document.getElementById('es_actividad_programada');
@@ -260,10 +365,28 @@ function editarTarea(id) {
     document.getElementById('fecha_programada_fin').value = tarea.fecha_programada_fin.replace(' ', 'T');
   }
 
-  // Renderizar campos extra dinámicos con valores guardados
-  const container = document.getElementById('dynamic-fields-container');
-  const camposExtra = (regionConfig && regionConfig.campos_extra && regionConfig.campos_extra[tarea.tipo_tarea]) || [];
-  renderDynamicFields(container, camposExtra, tarea.campos_extra || {});
+  // Cargar credenciales si aplica
+  if (tarea.tipo_tarea === 'alta_credencial_especial' && tarea.campos_extra) {
+    document.getElementById('cred-ticket-cliente').value = tarea.campos_extra.ticket_cliente || '';
+    const container = document.getElementById('credentials-rows-container');
+    container.innerHTML = '';
+    
+    const creds = tarea.campos_extra.credenciales_lista || [];
+    if (creds.length > 0) {
+      creds.forEach(c => agregarFilaCredencial(c.persona_propietaria, c.codigo_alfanumerico));
+    } else if (tarea.campos_extra.persona_propietaria) {
+      agregarFilaCredencial(tarea.campos_extra.persona_propietaria, tarea.campos_extra.codigo_alfanumerico);
+    }
+  } else {
+    // Renderizar campos extra dinámicos con valores guardados
+    const container = document.getElementById('dynamic-fields-container');
+    let camposExtra = (regionConfig && regionConfig.campos_extra && regionConfig.campos_extra[tarea.tipo_tarea]) || [];
+    if (['acceso_equipos', 'retiro_equipos', 'acceso_tecnicos', 'mantenimiento'].includes(tarea.tipo_tarea)) {
+      const salas = regionConfig.salas_datacenter || [];
+      camposExtra = camposExtra.map(c => (c.nombre === 'sala_datacenter' || c.nombre === 'sitio_mantenimiento') ? { ...c, opciones: salas } : c);
+    }
+    renderDynamicFields(container, camposExtra, tarea.campos_extra || {});
+  }
 
   // Subtareas
   const subContainer = document.getElementById('subtasks-rows-container');
@@ -284,17 +407,48 @@ async function guardarTarea(e) {
     return;
   }
 
-  const extraFieldsContainer = document.getElementById('dynamic-fields-container');
-  const campos_extra = extractDynamicFields(extraFieldsContainer);
+  let campos_extra = {};
 
-  // Extraer subtareas del constructor
+  // Extraer credenciales si es alta_credencial_especial
+  if (tipo_tarea === 'alta_credencial_especial') {
+    const ticketCliente = document.getElementById('cred-ticket-cliente')?.value.trim();
+    if (!ticketCliente) {
+      showToast('El Ticket de Cliente es obligatorio para Credenciales', 'warning');
+      return;
+    }
+
+    const credenciales_lista = [];
+    document.querySelectorAll('.credential-row').forEach(row => {
+      const persona = row.querySelector('.cred-persona')?.value.trim();
+      const codigo = row.querySelector('.cred-codigo')?.value.trim();
+      if (persona && codigo) {
+        credenciales_lista.push({ persona_propietaria: persona, codigo_alfanumerico: codigo });
+      }
+    });
+
+    if (credenciales_lista.length === 0) {
+      showToast('Debe ingresar al menos una persona con su código alfanumérico', 'warning');
+      return;
+    }
+
+    campos_extra = {
+      ticket_cliente: ticketCliente,
+      credenciales_lista: credenciales_lista
+    };
+  } else {
+    const extraFieldsContainer = document.getElementById('dynamic-fields-container');
+    campos_extra = extractDynamicFields(extraFieldsContainer);
+  }
+
+  // Extraer subtareas
   const subtareas = [];
   document.querySelectorAll('.subtask-row').forEach(row => {
     const t = row.querySelector('.sub-ticket')?.value.trim();
     const tit = row.querySelector('.sub-titulo')?.value.trim();
     const est = row.querySelector('.sub-estado')?.value;
+    const desc = row.querySelector('.sub-desc')?.value.trim();
     if (t && tit) {
-      subtareas.push({ ticket: t, titulo: tit, estado: est });
+      subtareas.push({ ticket: t, titulo: tit, estado: est, descripcion: desc });
     }
   });
 
@@ -360,14 +514,30 @@ async function abrirModalDetalle(id) {
     document.getElementById('detalle-operador').textContent = tarea.operador_nombre;
     document.getElementById('detalle-descripcion').textContent = tarea.descripcion;
 
-    // Campos extra
+    // Campos extra & credenciales
     const extraContainer = document.getElementById('detalle-campos-extra');
     extraContainer.innerHTML = '';
-    if (tarea.campos_extra && Object.keys(tarea.campos_extra).length > 0) {
+    
+    if (tarea.tipo_tarea === 'alta_credencial_especial' && tarea.campos_extra) {
+      const ticketCli = tarea.campos_extra.ticket_cliente || 'N/A';
+      extraContainer.innerHTML += `<div><strong>Ticket Cliente:</strong> ${ticketCli}</div>`;
+      
+      const creds = tarea.campos_extra.credenciales_lista || [];
+      if (creds.length > 0) {
+        let tablaCreds = '<table style="width:100%; font-size:0.8rem; border-collapse:collapse; margin-top:0.3rem;"><tr style="background:rgba(255,255,255,0.05);"><th style="padding:4px; text-align:left;">Persona Asignada</th><th style="padding:4px; text-align:left;">Código Alfanumérico</th></tr>';
+        creds.forEach(c => {
+          tablaCreds += `<tr><td style="padding:4px; border-bottom:1px solid #334155;">${c.persona_propietaria}</td><td style="padding:4px; border-bottom:1px solid #334155; font-family:monospace; color:var(--primary);">${c.codigo_alfanumerico}</td></tr>`;
+        });
+        tablaCreds += '</table>';
+        extraContainer.innerHTML += tablaCreds;
+      }
+    } else if (tarea.campos_extra && Object.keys(tarea.campos_extra).length > 0) {
       for (const [k, v] of Object.entries(tarea.campos_extra)) {
-        const div = document.createElement('div');
-        div.innerHTML = `<strong>${k.replace(/_/g, ' ')}:</strong> ${v}`;
-        extraContainer.appendChild(div);
+        if (typeof v !== 'object') {
+          const div = document.createElement('div');
+          div.innerHTML = `<strong>${k.replace(/_/g, ' ')}:</strong> ${v}`;
+          extraContainer.appendChild(div);
+        }
       }
     } else {
       extraContainer.innerHTML = '<span style="color:var(--text-muted);">Sin campos adicionales</span>';
@@ -404,7 +574,7 @@ function renderSubtareasEnDetalle(tarea) {
     item.innerHTML = `
       <div>
         <strong>${sub.ticket}:</strong> ${sub.titulo}
-        <div style="font-size:0.75rem; color:var(--text-secondary);">${sub.descripcion || ''}</div>
+        <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:2px;">${sub.descripcion || 'Sin comentarios adicionales.'}</div>
       </div>
       <div style="display:flex; align-items:center; gap:0.5rem;">
         <span class="badge badge-${sub.estado}">${sub.estado}</span>

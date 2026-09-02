@@ -65,19 +65,44 @@
   border-radius: 4px;
 }
 
-/* Subtasks inside task creation modal */
-.subtasks-builder-box {
+/* Subtasks and Credentials inside modal */
+.subtasks-builder-box, .credentials-builder-box {
   background-color: #0f172a;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
-  padding: 0.75rem;
+  padding: 0.85rem;
   margin-top: 0.75rem;
+}
+
+.subtasks-scroll-container, .credentials-scroll-container {
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .subtask-row {
   display: grid;
-  grid-template-columns: 120px 1fr 120px 36px;
+  grid-template-columns: 110px 1fr 110px 32px;
+  gap: 0.4rem;
+  align-items: center;
+  margin-bottom: 0.4rem;
+  background: rgba(30, 41, 59, 0.4);
+  padding: 0.4rem;
+  border-radius: 4px;
+}
+
+.credential-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 32px;
   gap: 0.5rem;
   align-items: center;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.4rem;
+  background: rgba(30, 41, 59, 0.5);
+  padding: 0.4rem;
+  border-radius: 4px;
+}
+
+.subtask-row-desc {
+  grid-column: 1 / -1;
+  margin-top: 0.2rem;
 }

@@ -21,12 +21,37 @@ TIPOS_TAREA_DEFAULT = [
     {"id": "alta_credencial_especial", "nombre": "Alta de Credenciales Especiales", "icono": "bi-key"}
 ]
 
-# Campos extra predeterminados (como alta_credencial_especial)
+# Salas de Datacenter y Subestaciones predeterminadas por región
+SALAS_DEFAULT = [
+    "Sala A - Servidores y Storage",
+    "Sala B - Racks de Red",
+    "Meet-Me Room (MMR)",
+    "Jaula Telecomunicaciones",
+    "Subestación Transformadora Principal",
+    "Sala de Generadores y UPS"
+]
+
+# Campos extra predeterminados
 CAMPOS_EXTRA_DEFAULT = {
     "alta_credencial_especial": [
-        {"nombre": "persona_propietaria", "label": "Persona Propietaria", "tipo": "text", "requerido": True},
-        {"nombre": "ticket_cliente", "label": "Ticket de Cliente", "tipo": "text", "requerido": True},
-        {"nombre": "codigo_alfanumerico", "label": "Código Alfanumérico Asociado", "tipo": "text", "requerido": True}
+        {"nombre": "ticket_cliente", "label": "Ticket de Cliente", "tipo": "text", "requerido": True}
+    ],
+    "acceso_equipos": [
+        {"nombre": "sala_datacenter", "label": "Sala de Datacenter", "tipo": "select", "opciones": SALAS_DEFAULT, "requerido": True}
+    ],
+    "retiro_equipos": [
+        {"nombre": "sala_datacenter", "label": "Sala de Datacenter", "tipo": "select", "opciones": SALAS_DEFAULT, "requerido": True}
+    ],
+    "acceso_tecnicos": [
+        {"nombre": "sala_datacenter", "label": "Sala de Datacenter", "tipo": "select", "opciones": SALAS_DEFAULT, "requerido": True},
+        {"nombre": "empresa_tecnico", "label": "Empresa / Proveedor", "tipo": "text", "requerido": False}
+    ],
+    "mantenimiento": [
+        {"nombre": "sitio_mantenimiento", "label": "Sitio de Trabajo (DC / Subestación)", "tipo": "select", "opciones": SALAS_DEFAULT, "requerido": True}
+    ],
+    "manejo_sitio_externo": [
+        {"nombre": "sitio_externo", "label": "Sitio Externo", "tipo": "select", "opciones": ["Chile", "Miami", "Brasil", "Otro"], "requerido": True},
+        {"nombre": "cantidad_contactos", "label": "Cantidad de Contactos con Nosotros", "tipo": "number", "requerido": True}
     ]
 }
 
@@ -53,6 +78,9 @@ class RegionConfig(db.Model):
     # Configuración de turnos personalizada por región
     turnos_config = db.Column(db.JSON, nullable=False, default=lambda: TURNOS_DEFAULT)
     
+    # Lista de salas y sitios de Datacenter disponibles en la región
+    salas_datacenter = db.Column(db.JSON, nullable=False, default=lambda: SALAS_DEFAULT)
+
     # Configuración estética o de UI específica
     config_ui = db.Column(db.JSON, nullable=False, default=lambda: {
         "titulo_bitacora": "Bitácora de Centro de Operaciones",
@@ -73,6 +101,7 @@ class RegionConfig(db.Model):
             'tipos_tarea_habilitados': self.tipos_tarea_habilitados or [],
             'campos_extra': self.campos_extra or {},
             'turnos_config': self.turnos_config or [],
+            'salas_datacenter': self.salas_datacenter or SALAS_DEFAULT,
             'config_ui': self.config_ui or {},
             'catalogo_completo_tipos': TIPOS_TAREA_DEFAULT,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None

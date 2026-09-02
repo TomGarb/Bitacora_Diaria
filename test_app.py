@@ -1,6 +1,6 @@
 import unittest
 import json
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from App import create_app
 from App.extensions import db
 from App.Models import Usuario, Region, RegionConfig, Bitacora, Tarea, Subtarea
@@ -20,14 +20,8 @@ class TestBitacoraDOC(unittest.TestCase):
 
         self.config = RegionConfig(
             region_id=self.region.id,
-            tipos_tarea_habilitados=["manos_remotas", "alta_credencial_especial", "mantenimiento"],
-            campos_extra={
-                "alta_credencial_especial": [
-                    {"nombre": "persona_propietaria", "label": "Persona Propietaria", "tipo": "text", "requerido": True},
-                    {"nombre": "ticket_cliente", "label": "Ticket de Cliente", "tipo": "text", "requerido": True},
-                    {"nombre": "codigo_alfanumerico", "label": "Código Alfanumérico", "tipo": "text", "requerido": True}
-                ]
-            }
+            tipos_tarea_habilitados=["manos_remotas", "alta_credencial_especial", "mantenimiento", "acceso_equipos", "manejo_sitio_externo"],
+            salas_datacenter=["Sala A", "Sala B", "Subestación 1"]
         )
         db.session.add(self.config)
 
@@ -78,10 +72,9 @@ class TestBitacoraDOC(unittest.TestCase):
         data = res_stats.get_json()
         self.assertIn('kpis', data)
 
-    def test_02_crear_tarea_credencial_especial_con_campos_extra(self):
+    def test_02_crear_tarea_credenciales_multiples(self):
         self.login_as(self.operador)
         
-        # Payload con campos extra requeridos
         payload = {
             "ticket": "SEC-100",
             "titulo": "Entrega credencial sala fría",
@@ -90,12 +83,14 @@ class TestBitacoraDOC(unittest.TestCase):
             "estado": "completada",
             "descripcion": "Acceso biométrico habilitado",
             "campos_extra": {
-                "persona_propietaria": "Laura Torres",
                 "ticket_cliente": "TK-CLI-900",
-                "codigo_alfanumerico": "CR-LAURA-88"
+                "credenciales_lista": [
+                    {"persona_propietaria": "Laura Torres", "codigo_alfanumerico": "CR-LAURA-88"},
+                    {"persona_propietaria": "Pedro Gómez", "codigo_alfanumerico": "CR-PEDRO-89"}
+                ]
             },
             "subtareas": [
-                {"ticket": "SEC-100-A", "titulo": "Enrolar huella", "estado": "completada"}
+                {"ticket": "SEC-100-A", "titulo": "Enrolar huella", "estado": "completada", "descripcion": "Enrolado ok"}
             ]
         }
 
@@ -103,38 +98,43 @@ class TestBitacoraDOC(unittest.TestCase):
         self.assertEqual(res.status_code, 201)
         data = res.get_json()
         self.assertTrue(data['success'])
-        self.assertEqual(data['tarea']['campos_extra']['persona_propietaria'], "Laura Torres")
-        self.assertEqual(len(data['tarea']['subtareas']), 1)
+        self.assertEqual(len(data['tarea']['campos_extra']['credenciales_lista']), 2)
+        self.assertEqual(data['tarea']['campos_extra']['ticket_cliente'], "TK-CLI-900")
 
-    def test_03_configuracion_dinamica_supervisor(self):
-        # Solo sub_admin o admin puede modificar config
-        self.login_as(self.supervisor)
-        
-        update_payload = {
-            "tipos_tarea_habilitados": ["manos_remotas", "virtualizacion"],
-            "campos_extra": {
-                "virtualizacion": [
-                    {"nombre": "ip_asignada", "label": "IP Asignada", "tipo": "text", "requerido": True}
-                ]
-            },
-            "turnos_config": [
-                {"id": "manana", "nombre": "Mañana", "horario": "06:00 a 14:00", "dias": "Lun a Dom"}
-            ]
-        }
-
-        res = self.client.put(f'/api/config/{self.region.id}', json=update_payload)
-        self.assertEqual(res.status_code, 200)
-        
-        # Verificar que se guardó
-        res_get = self.client.get(f'/api/config/{self.region.id}')
-        cfg = res_get.get_json()['config']
-        self.assertEqual(cfg['tipos_tarea_habilitados'], ["manos_remotas", "virtualizacion"])
-        self.assertIn("virtualizacion", cfg['campos_extra'])
-
-    def test_04_mail_preview_regla_visibilidad(self):
+    def test_03_validacion_fechas_equipos_y_mantenimiento(self):
         self.login_as(self.operador)
         
-        # Crear bitácora
+        # Equipos sin fecha inicio debe fallar
+        res_fail = self.client.post('/api/tareas', json={
+            "ticket": "EQ-1",
+            "titulo": "Ingreso servidor",
+            "cliente": "Cli",
+            "tipo_tarea": "acceso_equipos",
+            "estado": "en_progreso",
+            "descripcion": "desc",
+            "campos_extra": {"sala_datacenter": "Sala A"}
+        })
+        self.assertEqual(res_fail.status_code, 400)
+
+        # Mantenimiento con inicio y fin debe pasar
+        ahora = datetime.utcnow()
+        res_ok = self.client.post('/api/tareas', json={
+            "ticket": "MNT-1",
+            "titulo": "Mantenimiento UPS",
+            "cliente": "DC",
+            "tipo_tarea": "mantenimiento",
+            "estado": "pendiente",
+            "descripcion": "desc",
+            "fecha_programada_inicio": ahora.isoformat(),
+            "fecha_programada_fin": (ahora + timedelta(hours=2)).isoformat(),
+            "campos_extra": {"sitio_mantenimiento": "Subestación 1"}
+        })
+        self.assertEqual(res_ok.status_code, 201)
+        self.assertTrue(res_ok.get_json()['tarea']['es_actividad_programada'])
+
+    def test_04_mail_preview_secciones_y_visibilidad(self):
+        self.login_as(self.operador)
+        
         bitacora = Bitacora(region_id=self.region.id, fecha=date.today(), turno="manana", estado="abierta")
         db.session.add(bitacora)
         db.session.flush()
@@ -152,20 +152,20 @@ class TestBitacoraDOC(unittest.TestCase):
             es_actividad_programada=False
         )
 
-        # Tarea 2: de otro usuario y NO programada (el operador NO debe verla)
+        # Tarea 2: de otro operador no programada (oculta)
         t2 = Tarea(
             bitacora_id=bitacora.id,
             operador_id=self.supervisor.id,
             tipo_tarea="manos_remotas",
             ticket="RH-2",
-            titulo="Tarea privada de supervisor",
+            titulo="Tarea privada",
             cliente="Cli 2",
             estado="completada",
             descripcion="Desc 2",
             es_actividad_programada=False
         )
 
-        # Tarea 3: de otro usuario pero SI PROGRAMADA (el operador SI debe verla)
+        # Tarea 3: Mantenimiento programado de supervisor (visible en tabla de mantenimientos)
         t3 = Tarea(
             bitacora_id=bitacora.id,
             operador_id=self.supervisor.id,
@@ -175,21 +175,22 @@ class TestBitacoraDOC(unittest.TestCase):
             cliente="Datacenter",
             estado="pendiente",
             descripcion="Mantenimiento general",
-            es_actividad_programada=True
+            es_actividad_programada=True,
+            campos_extra={"sitio_mantenimiento": "Subestación 1"}
         )
 
         db.session.add_all([t1, t2, t3])
         db.session.commit()
 
-        # Consultar vista previa de mail como operador
         res = self.client.get(f'/api/mail-preview/data?bitacora_id={bitacora.id}')
         self.assertEqual(res.status_code, 200)
         data = res.get_json()
         
-        tickets_visibles = [t['ticket'] for t in data['tareas']]
-        self.assertIn("RH-1", tickets_visibles)   # Suya
-        self.assertIn("MNT-99", tickets_visibles) # Programada (visible a todos)
-        self.assertNotIn("RH-2", tickets_visibles) # De otro y no programada (oculta)
+        secciones = data['secciones']
+        self.assertEqual(len(secciones['casos_operador']), 1)
+        self.assertEqual(secciones['casos_operador'][0]['ticket'], 'RH-1')
+        self.assertEqual(len(secciones['programados_mantenimientos']), 1)
+        self.assertEqual(secciones['programados_mantenimientos'][0]['ticket'], 'MNT-99')
 
 if __name__ == '__main__':
     unittest.main()

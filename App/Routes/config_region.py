@@ -90,6 +90,9 @@ def guardar_config(region_id):
     if 'turnos_config' in data:
         config.turnos_config = list(data['turnos_config'])
 
+    if 'salas_datacenter' in data:
+        config.salas_datacenter = list(data['salas_datacenter'])
+
     if 'config_ui' in data:
         current_ui = dict(config.config_ui or {})
         current_ui.update(data['config_ui'])

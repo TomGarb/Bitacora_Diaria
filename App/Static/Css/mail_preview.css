@@ -1,4 +1,4 @@
-/* Estilos específicos de la Vista Previa de Correo */
+/* Estilos de la Vista Previa de Correo en Tablas Ejecutivas */
 
 .mail-client-window {
   background: #ffffff;
@@ -7,7 +7,7 @@
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow-lg);
   overflow: hidden;
-  max-width: 900px;
+  max-width: 960px;
   margin: 0 auto;
 }
 
@@ -19,7 +19,7 @@
 
 .mail-header-row {
   display: flex;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.35rem;
   font-size: 0.85rem;
 }
 
@@ -35,8 +35,9 @@
 
 .mail-body-content {
   padding: 2rem;
-  font-family: Arial, sans-serif;
-  line-height: 1.6;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  line-height: 1.5;
+  color: #1e293b;
 }
 
 .mail-brand-header {
@@ -50,58 +51,83 @@
   margin-bottom: 1.5rem;
 }
 
-.mail-summary-table {
+/* Tablas Ejecutivas de Correo */
+.mail-section {
+  margin-bottom: 2rem;
+}
+
+.mail-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+  padding-bottom: 0.35rem;
+  margin-bottom: 0.75rem;
+  border-bottom: 2px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mail-section-title i {
+  color: #2563eb;
+}
+
+.mail-table {
   width: 100%;
   border-collapse: collapse;
+  font-size: 0.825rem;
+  margin-bottom: 0.5rem;
+}
+
+.mail-table th {
+  background-color: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+  border: 1px solid #cbd5e1;
+  padding: 0.55rem 0.75rem;
+  text-align: left;
+}
+
+.mail-table td {
+  border: 1px solid #e2e8f0;
+  padding: 0.6rem 0.75rem;
+  vertical-align: top;
+  color: #1e293b;
+}
+
+.mail-table tr:nth-child(even) td {
+  background-color: #f8fafc;
+}
+
+/* Box de Notas de Turno superiores */
+.mail-notes-box {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-left: 4px solid #3b82f6;
+  border-radius: 4px;
+  padding: 1rem;
   margin-bottom: 1.5rem;
   font-size: 0.875rem;
 }
 
-.mail-summary-table th {
-  background: #f8fafc;
-  color: #475569;
-  border: 1px solid #e2e8f0;
-  padding: 0.6rem 0.8rem;
-  text-align: left;
-}
-
-.mail-summary-table td {
-  border: 1px solid #e2e8f0;
-  padding: 0.6rem 0.8rem;
-  color: #1e293b;
-}
-
-.mail-task-card {
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  background: #ffffff;
-}
-
-.mail-task-card.is-programada {
-  border-left: 4px solid #8b5cf6;
-  background: #faf5ff;
-}
-
-.mail-task-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.mail-notes-box h4 {
+  color: #1e40af;
   margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 700;
 }
 
-.mail-badge {
+/* Badges para el mail */
+.m-badge {
   display: inline-block;
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: bold;
+  padding: 0.15rem 0.45rem;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  font-weight: 700;
   text-transform: uppercase;
 }
 
-.mail-badge-pendiente { background: #fef3c7; color: #92400e; }
-.mail-badge-en_progreso { background: #dbeafe; color: #1e40af; }
-.mail-badge-completada { background: #d1fae5; color: #065f46; }
-.mail-badge-cancelada { background: #fee2e2; color: #991b1b; }
-.mail-badge-prog { background: #ede9fe; color: #5b21b6; }
+.m-badge-pendiente { background: #fef3c7; color: #92400e; }
+.m-badge-en_progreso { background: #dbeafe; color: #1e40af; }
+.m-badge-completada { background: #d1fae5; color: #065f46; }
+.m-badge-cancelada { background: #fee2e2; color: #991b1b; }

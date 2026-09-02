@@ -29,7 +29,10 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-add-extra-field')?.addEventListener('click', agregarFilaCampoExtra);
 
   // Botón agregar turno
-  document.getElementById('btn-add-shift-row')?.addEventListener('click', agregarFilaTurno);
+  document.getElementById('btn-add-shift-row')?.addEventListener('click', () => agregarFilaTurno());
+
+  // Botón agregar sala
+  document.getElementById('btn-add-sala-row')?.addEventListener('click', () => agregarFilaSala());
 
   // Formulario principal de guardado
   document.getElementById('form-config-region')?.addEventListener('submit', guardarConfiguracion);
@@ -65,9 +68,41 @@ async function cargarConfiguracion(regionId) {
     // 4. Renderizar turnos
     renderTurnosEditor();
 
+    // 5. Renderizar salas
+    renderSalasEditor();
+
   } catch (error) {
     console.error('Error cargando configuración:', error);
   }
+}
+
+// Renderizador del editor de salas
+function renderSalasEditor() {
+  const container = document.getElementById('salas-editor-container');
+  if (!container || !currentConfig) return;
+
+  container.innerHTML = '';
+  const salas = currentConfig.salas_datacenter || [];
+
+  salas.forEach(s => agregarFilaSala(s));
+}
+
+function agregarFilaSala(nombre = '') {
+  const container = document.getElementById('salas-editor-container');
+  if (!container) return;
+
+  const row = document.createElement('div');
+  row.style.display = 'flex';
+  row.style.gap = '0.5rem';
+  row.style.alignItems = 'center';
+
+  row.innerHTML = `
+    <input type="text" class="form-control form-control-sm sala-nombre" placeholder="Nombre de sala / subestación (ej: Sala A, Subestación 1)" value="${nombre}" required>
+    <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()" style="padding:0.25rem 0.4rem;">
+      <i class="bi bi-trash"></i>
+    </button>
+  `;
+  container.appendChild(row);
 }
 
 // Toggle visual para las tarjetas de tipos de tareas
@@ -227,7 +262,14 @@ async function guardarConfiguracion(e) {
     }
   });
 
-  // 4. UI config
+  // 4. Salas de Datacenter de la región
+  const salasDatacenter = [];
+  document.querySelectorAll('#salas-editor-container .sala-nombre').forEach(input => {
+    const s = input.value.trim();
+    if (s) salasDatacenter.push(s);
+  });
+
+  // 5. UI config
   const configUI = {
     titulo_bitacora: document.getElementById('cfg-titulo-ui').value.trim()
   };
@@ -236,6 +278,7 @@ async function guardarConfiguracion(e) {
     tipos_tarea_habilitados: tiposHabilitados,
     campos_extra: camposExtraActuales,
     turnos_config: turnosConfig,
+    salas_datacenter: salasDatacenter,
     config_ui: configUI
   };
 
