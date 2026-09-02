@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TV DOC - Agenda de Tareas Planificadas</title>
+  
+  <!-- Bootstrap Icons CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  
+  <!-- Estilos TV Planificadas -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='Css/tv_planificadas.css') }}">
+</head>
+<body>
+  <input type="hidden" id="tv-region-id" value="{{ region.id if region else 1 }}">
+
+  <!-- Header TV Superior -->
+  <header class="tv-header">
+    <div class="tv-brand">
+      <div class="tv-brand-icon">
+        <i class="bi bi-calendar-range-fill"></i>
+      </div>
+      <div>
+        <div class="tv-brand-title">DOC SCHEDULE — {{ region.nombre.upper() if region else 'DATACENTER' }}</div>
+        <div class="tv-brand-subtitle">Cartelera de Actividades y Mantenimientos Planificados</div>
+      </div>
+    </div>
+
+    <div class="tv-header-center">
+      <div class="tv-board-stats">
+        <i class="bi bi-activity"></i>
+        <span>EN CURSO: <strong id="stat-en-curso" style="color:var(--tv-neon-green); font-size:1.2rem;">0</strong> | TOTAL HOY: <strong id="stat-total-plan" style="color:#ffffff;">0</strong></span>
+      </div>
+      <div id="tv-shift-label" style="font-family:'Chakra Petch', sans-serif; font-weight:700; color:var(--tv-text-bright); font-size:1.05rem; letter-spacing:1px;">
+        TURNO ACTIVO
+      </div>
+    </div>
+
+    <div class="tv-header-right">
+      <div id="tv-clock" class="tv-clock-box">--:--:--</div>
+    </div>
+  </header>
+
+  <!-- Cartelera de Aeropuerto (Flight Board) -->
+  <main class="tv-board-container">
+    <div class="tv-board-header">
+      <div>HORARIO</div>
+      <div>TICKET</div>
+      <div>CLIENTE / ÁREA</div>
+      <div>TIPO TAREA</div>
+      <div>ACTIVIDAD / TRABAJOS</div>
+      <div>SALA / SITIO</div>
+      <div style="text-align:center;">ESTADO</div>
+    </div>
+
+    <div class="tv-board-viewport" id="board-viewport">
+      <div class="tv-board-rows-wrapper" id="rows-wrapper">
+        <div style="color:var(--tv-text-muted); font-size:1.2rem; text-align:center; padding:3rem;">Cargando cartelera de tareas planificadas...</div>
+      </div>
+    </div>
+  </main>
+
+  <script src="{{ url_for('static', filename='Js/tv_planificadas.js') }}"></script>
+</body>
+</html>

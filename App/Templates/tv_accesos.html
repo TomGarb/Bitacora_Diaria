@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TV DOC - Accesos y Movimiento de Equipos</title>
+  
+  <!-- Bootstrap Icons CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  
+  <!-- Estilos TV Accesos -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='Css/tv_accesos.css') }}">
+</head>
+<body>
+  <input type="hidden" id="tv-region-id" value="{{ region.id if region else 1 }}">
+
+  <!-- Header TV Superior -->
+  <header class="tv-header">
+    <div class="tv-brand">
+      <div class="tv-brand-icon">
+        <i class="bi bi-hdd-rack-fill"></i>
+      </div>
+      <div>
+        <div class="tv-brand-title">DOC MONITORING — {{ region.nombre.upper() if region else 'DATACENTER' }}</div>
+        <div class="tv-brand-subtitle">Control Operativo de Accesos y Equipamiento</div>
+      </div>
+    </div>
+
+    <div class="tv-header-center">
+      <div class="tv-live-badge">
+        <span class="tv-live-dot"></span>
+        <span>EN VIVO</span>
+      </div>
+      <div id="tv-shift-label" style="font-family:'Chakra Petch', sans-serif; font-weight:700; color:var(--tv-text-bright); font-size:1.05rem; letter-spacing:1px;">
+        TURNO ACTIVO
+      </div>
+    </div>
+
+    <div class="tv-header-right">
+      <div id="tv-clock" class="tv-clock-box">--:--:--</div>
+    </div>
+  </header>
+
+  <!-- Grid Principal 2 Columnas -->
+  <main class="tv-main-grid">
+    
+    <!-- Columna Izquierda: Accesos de Técnicos -->
+    <section class="tv-column">
+      <div class="tv-column-header">
+        <div class="tv-column-title" style="color: var(--tv-neon-cyan);">
+          <i class="bi bi-person-badge-fill"></i> ACCESOS DE TÉCNICOS
+        </div>
+        <div class="tv-count-badge" id="count-tecnicos">0</div>
+      </div>
+      <div class="tv-scroll-viewport" id="viewport-tecnicos">
+        <div class="tv-items-wrapper" id="tecnicos-wrapper">
+          <div class="tv-empty-box">Cargando accesos...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Columna Derecha: Movimiento de Equipos (Inbound / Outbound) -->
+    <section class="tv-column">
+      <div class="tv-column-header">
+        <div class="tv-column-title" style="color: var(--tv-neon-green);">
+          <i class="bi bi-arrow-left-right"></i> INBOUNDS / OUTBOUNDS DE EQUIPOS
+        </div>
+        <div class="tv-count-badge" id="count-equipos" style="color: var(--tv-neon-green); border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.15);">0</div>
+      </div>
+      <div class="tv-scroll-viewport" id="viewport-equipos">
+        <div class="tv-items-wrapper" id="equipos-wrapper">
+          <div class="tv-empty-box">Cargando movimientos...</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="{{ url_for('static', filename='Js/tv_accesos.js') }}"></script>
+</body>
+</html>

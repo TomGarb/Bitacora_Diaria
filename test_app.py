@@ -262,5 +262,111 @@ class TestBitacoraDOC(unittest.TestCase):
         self.assertEqual(res_resp.status_code, 200)
         self.assertEqual(res_resp.get_json()['feedback']['estado'], 'resuelto')
 
+    def test_07_tv_dashboards_endpoints(self):
+        # 1. Crear bitacora y tareas de TV para la región
+        bitacora = Bitacora(region_id=self.region.id, fecha=date.today(), turno="tarde", estado="abierta")
+        db.session.add(bitacora)
+        db.session.flush()
+
+        ahora = datetime.now(timezone.utc)
+
+        # Acceso técnico
+        t_tec = Tarea(
+            bitacora_id=bitacora.id,
+            operador_id=self.operador.id,
+            tipo_tarea="acceso_tecnicos",
+            ticket="TEC-01",
+            titulo="Acceso fibra",
+            cliente="Lumen",
+            estado="completada",
+            descripcion="Empalme ODF",
+            es_actividad_programada=True,
+            fecha_programada_inicio=ahora,
+            campos_extra={"sala_datacenter": "Meet-Me Room"}
+        )
+
+        # Inbound equipo
+        t_eq = Tarea(
+            bitacora_id=bitacora.id,
+            operador_id=self.operador.id,
+            tipo_tarea="acceso_equipos",
+            ticket="EQ-01",
+            titulo="Ingreso switches",
+            cliente="Telecom",
+            estado="en_progreso",
+            descripcion="Switches Nexus",
+            es_actividad_programada=True,
+            fecha_programada_inicio=ahora,
+            campos_extra={"sala_datacenter": "Sala A"}
+        )
+
+        # Credencial especial
+        t_cred = Tarea(
+            bitacora_id=bitacora.id,
+            operador_id=self.operador.id,
+            tipo_tarea="alta_credencial_especial",
+            ticket="SEC-01",
+            titulo="Credenciales auditoria",
+            cliente="Banco Test",
+            estado="completada",
+            descripcion="Auditoria",
+            es_actividad_programada=True,
+            fecha_programada_inicio=ahora - timedelta(hours=1),
+            fecha_programada_fin=ahora + timedelta(hours=2),
+            campos_extra={
+                "ticket_cliente": "TK-BN-01",
+                "credenciales_lista": [{"persona_propietaria": "Juan Perez", "codigo_alfanumerico": "CRD-9988"}]
+            }
+        )
+
+        # Mantenimiento programado
+        t_mnt = Tarea(
+            bitacora_id=bitacora.id,
+            operador_id=self.supervisor.id,
+            tipo_tarea="mantenimiento",
+            ticket="MNT-01",
+            titulo="Corte UPS",
+            cliente="DC Ops",
+            estado="pendiente",
+            descripcion="Prueba generador",
+            es_actividad_programada=True,
+            fecha_programada_inicio=ahora + timedelta(hours=1),
+            fecha_programada_fin=ahora + timedelta(hours=3),
+            campos_extra={"sitio_mantenimiento": "Subestación 1"}
+        )
+
+        db.session.add_all([t_tec, t_eq, t_cred, t_mnt])
+        db.session.commit()
+
+        # Test HTML Views
+        r_v1 = self.client.get(f'/tv/{self.region.id}/accesos')
+        self.assertEqual(r_v1.status_code, 200)
+
+        r_v2 = self.client.get(f'/tv/{self.region.id}/credenciales')
+        self.assertEqual(r_v2.status_code, 200)
+
+        r_v3 = self.client.get(f'/tv/{self.region.id}/planificadas')
+        self.assertEqual(r_v3.status_code, 200)
+
+        # Test API JSON Accesos
+        r_api_acc = self.client.get(f'/api/tv/{self.region.id}/accesos')
+        self.assertEqual(r_api_acc.status_code, 200)
+        data_acc = r_api_acc.get_json()
+        self.assertEqual(len(data_acc['tecnicos']), 1)
+        self.assertEqual(len(data_acc['equipos']), 1)
+
+        # Test API JSON Credenciales
+        r_api_cred = self.client.get(f'/api/tv/{self.region.id}/credenciales')
+        self.assertEqual(r_api_cred.status_code, 200)
+        data_cred = r_api_cred.get_json()
+        self.assertEqual(len(data_cred['credenciales']), 1)
+        self.assertEqual(data_cred['credenciales'][0]['codigo_alfanumerico'], 'CRD-9988')
+
+        # Test API JSON Planificadas
+        r_api_plan = self.client.get(f'/api/tv/{self.region.id}/planificadas')
+        self.assertEqual(r_api_plan.status_code, 200)
+        data_plan = r_api_plan.get_json()
+        self.assertTrue(len(data_plan['planificadas']) >= 1)
+
 if __name__ == '__main__':
     unittest.main()

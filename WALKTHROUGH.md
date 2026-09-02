@@ -132,6 +132,17 @@ En [`/mail-preview`](file:///c:/Users/Tomas/Desktop/Code/Bitacora%20Centro%20Ope
 6. **Tabla 4: Manejo de Sitios Externos** (Ticket, Cliente, Sitio Externo [Chile/Miami], Cantidad de Contactos, Detalle).
 7. **Tabla 5: Tareas Extras Aplicadas** (Ticket, Cliente, Título, Descripción, Estado).
 
+### J. Dashboards para Pantallas de TV (Visualización Pasiva y Regionalizada)
+Módulo exclusivo para proyectar en monitores y Smart TVs de los centros de operaciones (DOC). No contiene barras de navegación ni botones, posee contraste extremo Cyber/Industrial, reloj en tiempo real, auto-refresh vía AJAX y auto-scroll vertical continuo (carrusel) si el contenido excede el alto de la pantalla:
+
+1. **TV 1 — Accesos y Movimiento de Equipos (`/tv/<region_id>/accesos`):**
+   - **Columna Izquierda:** Accesos de Técnicos (Ticket, Empresa, Sala DC, Horarios).
+   - **Columna Derecha:** Inbounds / Outbounds de Equipos (Ticket, Cliente, Sala DC, Tipo de Movimiento).
+2. **TV 2 — Credenciales Especiales Activas (`/tv/<region_id>/credenciales`):**
+   - Tarjetas gigantes de alto contraste para guardias y operadores con **Código Alfanumérico Gigante**, Nombre de Persona, Ticket Cliente y Ventana Horaria de Vigencia.
+3. **TV 3 — Agenda de Tareas Planificadas (`/tv/<region_id>/planificadas`):**
+   - Cartelera de Aeropuerto (Airport Flight Board) en tiempo real con horarios, tickets, clientes, salas, tareas en curso con highlight pulsante y atenuación de tareas finalizadas.
+
 ---
 
 ## 3. Cuentas de Acceso Preconfiguradas

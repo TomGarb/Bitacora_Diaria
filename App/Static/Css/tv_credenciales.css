@@ -1,0 +1,293 @@
+/* =========================================================
+   TV CREDENCIALES ESPECIALES ACTIVAS - CYBER/INDUSTRIAL DARK
+   ========================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=JetBrains+Mono:wght@400;700;800&family=Inter:wght@400;600;700;900&display=swap');
+
+:root {
+  --tv-bg: #05070d;
+  --tv-surface: #0a0f1d;
+  --tv-surface-card: #0f172a;
+  --tv-border: #1e293b;
+  --tv-neon-cyan: #00e5ff;
+  --tv-neon-green: #10b981;
+  --tv-neon-purple: #c084fc;
+  --tv-neon-amber: #f59e0b;
+  --tv-text-bright: #f8fafc;
+  --tv-text-muted: #94a3b8;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--tv-bg);
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(192, 132, 252, 0.07) 0%, transparent 45%),
+    radial-gradient(circle at 90% 80%, rgba(0, 229, 255, 0.07) 0%, transparent 45%),
+    linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+  color: var(--tv-text-bright);
+  font-family: 'Inter', sans-serif;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header TV */
+.tv-header {
+  height: 85px;
+  background: rgba(10, 15, 29, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 2px solid var(--tv-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2.5rem;
+  flex-shrink: 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+}
+
+.tv-brand {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.tv-brand-icon {
+  width: 52px;
+  height: 52px;
+  background: linear-gradient(135deg, #a855f7, #6366f1);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  color: #fff;
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.45);
+}
+
+.tv-brand-title {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #ffffff;
+}
+
+.tv-brand-subtitle {
+  font-size: 0.85rem;
+  color: var(--tv-neon-purple);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: 600;
+}
+
+.tv-header-center {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.tv-counter-pill {
+  background: rgba(192, 132, 252, 0.15);
+  border: 1px solid rgba(192, 132, 252, 0.4);
+  padding: 0.4rem 1.25rem;
+  border-radius: 50px;
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--tv-neon-purple);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.tv-clock-box {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--tv-neon-cyan);
+  background: rgba(0, 0, 0, 0.5);
+  padding: 0.4rem 1.25rem;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  letter-spacing: 1px;
+}
+
+/* Área de Visualización de Tarjetas */
+.tv-viewport-container {
+  flex: 1;
+  padding: 2rem 2.5rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.tv-credentials-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: 1.5rem;
+  transition: transform 0.6s ease-in-out;
+}
+
+/* Tarjeta Gigante de Credencial */
+.tv-cred-card {
+  background: var(--tv-surface-card);
+  border: 2px solid var(--tv-border);
+  border-radius: 14px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  position: relative;
+  overflow: hidden;
+}
+
+.tv-cred-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: var(--tv-border);
+}
+
+.tv-cred-card.vigente {
+  border-color: rgba(16, 185, 129, 0.6);
+  box-shadow: 0 0 25px rgba(16, 185, 129, 0.2);
+}
+
+.tv-cred-card.vigente::before {
+  background: linear-gradient(90deg, var(--tv-neon-green), var(--tv-neon-cyan));
+}
+
+.tv-cred-card.programada {
+  border-color: rgba(192, 132, 252, 0.4);
+}
+
+.tv-cred-card.programada::before {
+  background: var(--tv-neon-purple);
+}
+
+.tv-cred-card.finalizada {
+  opacity: 0.5;
+  border-color: var(--tv-border);
+}
+
+.tv-cred-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.tv-cred-persona {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+}
+
+.tv-cred-cliente {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--tv-text-muted);
+  margin-top: 0.25rem;
+}
+
+.tv-status-badge {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.35rem 0.85rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.badge-vigente {
+  background: rgba(16, 185, 129, 0.2);
+  color: var(--tv-neon-green);
+  border: 1px solid var(--tv-neon-green);
+  animation: pulse-border 2s infinite;
+}
+
+.badge-programada {
+  background: rgba(192, 132, 252, 0.2);
+  color: var(--tv-neon-purple);
+  border: 1px solid var(--tv-neon-purple);
+}
+
+.badge-finalizada {
+  background: rgba(148, 163, 184, 0.15);
+  color: var(--tv-text-muted);
+  border: 1px solid var(--tv-border);
+}
+
+@keyframes pulse-border {
+  0% { box-shadow: 0 0 5px rgba(16, 185, 129, 0.4); }
+  50% { box-shadow: 0 0 18px rgba(16, 185, 129, 0.8); }
+  100% { box-shadow: 0 0 5px rgba(16, 185, 129, 0.4); }
+}
+
+/* Código Alfanumérico Gigante */
+.tv-cred-code-box {
+  background: #060a14;
+  border: 2px dashed rgba(0, 229, 255, 0.4);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin: 1rem 0;
+  text-align: center;
+}
+
+.tv-cred-code-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--tv-text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.tv-cred-code-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: var(--tv-neon-cyan);
+  text-shadow: 0 0 15px rgba(0, 229, 255, 0.5);
+}
+
+/* Footer de Tarjeta con Horarios y Tickets */
+.tv-cred-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--tv-border);
+  font-size: 0.95rem;
+}
+
+.tv-cred-window {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.tv-cred-ticket-cli {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--tv-neon-purple);
+  font-weight: 700;
+}

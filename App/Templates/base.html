@@ -62,6 +62,22 @@
         <span>Feedback & Soporte</span>
       </a>
 
+      <div class="nav-section-title">Pantallas TV Datacenter</div>
+      <a href="{{ url_for('tv.tv_accesos', region_id=current_user.region_id or 1) if current_user else '/tv/1/accesos' }}" target="_blank" class="nav-item">
+        <i class="bi bi-tv"></i>
+        <span>TV 1: Accesos & Equipos</span>
+      </a>
+
+      <a href="{{ url_for('tv.tv_credenciales', region_id=current_user.region_id or 1) if current_user else '/tv/1/credenciales' }}" target="_blank" class="nav-item">
+        <i class="bi bi-tv"></i>
+        <span>TV 2: Credenciales Activas</span>
+      </a>
+
+      <a href="{{ url_for('tv.tv_planificadas', region_id=current_user.region_id or 1) if current_user else '/tv/1/planificadas' }}" target="_blank" class="nav-item">
+        <i class="bi bi-tv"></i>
+        <span>TV 3: Agenda Planificada</span>
+      </a>
+
       {% if current_user and (current_user.rol in ['admin', 'sub_admin']) %}
       <div class="nav-section-title">Supervisión DOC</div>
       <a href="{{ url_for('config_region.index') }}" class="nav-item {% if request.endpoint == 'config_region.index' %}active{% endif %}">
