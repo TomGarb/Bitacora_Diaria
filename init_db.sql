@@ -39,7 +39,8 @@ CREATE TABLE IF NOT EXISTS region_configs (
         {"id": "tarde", "nombre": "Tarde", "horario": "15:00 a 23:00", "dias": "Lunes a Domingo"},
         {"id": "noche", "nombre": "Noche", "horario": "23:00 a 07:00", "dias": "Lunes a Domingo"},
         {"id": "central", "nombre": "Central", "horario": "09:00 a 18:00", "dias": "Lunes a Viernes"}
-    }'::jsonb,
+    ]'::jsonb,
+    salas_datacenter JSONB NOT NULL DEFAULT '["Sala A - Servidores y Storage", "Sala B - Racks de Red", "Meet-Me Room (MMR)", "Jaula Telecomunicaciones", "Subestación Transformadora Principal", "Sala de Generadores y UPS"]'::jsonb,
     config_ui JSONB NOT NULL DEFAULT '{
         "titulo": "Bitácora de Centro de Operaciones",
         "tema_color": "#1e293b",
