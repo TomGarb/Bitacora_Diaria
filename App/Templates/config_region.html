@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Configuración de Región - DOC{% endblock %}
+{% block page_title %}Personalización de Región (Supervisor DOC){% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='Css/config_region.css') }}">
+{% endblock %}
+
+{% block content %}
+<input type="hidden" id="config-region-id" value="{{ region.id if region else 1 }}">
+
+<form id="form-config-region">
+  
+  <!-- Selector de Región (si es Admin Global) -->
+  {% if current_user and current_user.is_admin() and regiones|length > 1 %}
+  <div class="card" style="padding: 1rem; margin-bottom: 1.5rem;">
+    <div style="display:flex; align-items:center; gap:1rem;">
+      <label class="form-label" style="margin-bottom:0; font-weight:700;">Seleccionar Región a Configurar:</label>
+      <select id="selector-region-admin" class="form-select" style="max-width: 300px;">
+        {% for r in regiones %}
+          <option value="{{ r.id }}" {% if region and region.id == r.id %}selected{% endif %}>{{ r.nombre }} ({{ r.codigo }})</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- SECCIÓN 1: Tipos de Tareas Habilitados -->
+  <div class="config-section">
+    <div class="config-section-title">
+      <i class="bi bi-toggles"></i> 1. Catálogo de Actividades y Tipos de Tareas Habilitadas
+    </div>
+    <div class="config-section-desc">
+      Seleccione qué actividades son realizadas por los operadores de <strong>{{ region.nombre if region else 'esta región' }}</strong>. Los operadores únicamente verán y podrán cargar las tareas seleccionadas.
+    </div>
+
+    <div class="task-type-grid">
+      {% for t in catalogo_tipos %}
+      <div class="task-type-toggle-card {% if config and (t.id in config.tipos_tarea_habilitados) %}selected{% endif %}" onclick="toggleTaskType(this)">
+        <input type="checkbox" class="type-checkbox" value="{{ t.id }}" {% if config and (t.id in config.tipos_tarea_habilitados) %}checked{% endif %} style="pointer-events:none;">
+        <i class="bi {{ t.icono }}" style="font-size: 1.25rem; color: var(--primary);"></i>
+        <div>
+          <strong style="font-size:0.875rem; color:var(--text-primary); display:block;">{{ t.nombre }}</strong>
+          <small style="font-size:0.75rem; color:var(--text-muted);">{{ t.id }}</small>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- SECCIÓN 2: Campos Extra Dinámicos por Tipo de Tarea -->
+  <div class="config-section">
+    <div class="config-section-title">
+      <i class="bi bi-input-cursor-text"></i> 2. Campos Personalizados por Tipo de Actividad
+    </div>
+    <div class="config-section-desc">
+      Configure campos adicionales específicos requeridos para cada tipo de tarea (por ejemplo: para <em>Alta de Credenciales Especiales</em> se configuran Persona Propietaria, Ticket Cliente y Código Alfanumérico).
+    </div>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:1rem;">
+      <div style="display:flex; align-items:center; gap:0.75rem;">
+        <label class="form-label" style="margin-bottom:0;">Tipo de Tarea a configurar:</label>
+        <select id="select-task-type-for-fields" class="form-select" style="min-width: 260px;">
+          {% for t in catalogo_tipos %}
+            <option value="{{ t.id }}" {% if t.id == 'alta_credencial_especial' %}selected{% endif %}>{{ t.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <button type="button" id="btn-add-extra-field" class="btn btn-secondary btn-sm">
+        <i class="bi bi-plus-lg"></i> Agregar Campo Extra
+      </button>
+    </div>
+
+    <div id="extra-fields-editor-container">
+      <!-- Filas de campos cargadas dinámicamente vía JS -->
+    </div>
+  </div>
+
+  <!-- SECCIÓN 3: Turnos y Horarios de la Región -->
+  <div class="config-section">
+    <div class="config-section-title">
+      <i class="bi bi-clock-history"></i> 3. Turnos y Horarios Operativos de la Región
+    </div>
+    <div class="config-section-desc">
+      Defina los turnos de trabajo específicos de su centro de operaciones (Mañana, Tarde, Noche, Central u otros personalizados).
+    </div>
+
+    <div id="shifts-editor-container">
+      <!-- Turnos configurables dinámicos -->
+    </div>
+
+    <button type="button" id="btn-add-shift-row" class="btn btn-secondary btn-sm" style="margin-top:0.5rem;">
+      <i class="bi bi-plus-lg"></i> Agregar Nuevo Turno
+    </button>
+  </div>
+
+  <!-- SECCIÓN 4: Personalización Estética / UI -->
+  <div class="config-section">
+    <div class="config-section-title">
+      <i class="bi bi-palette"></i> 4. Parámetros Generales de la Bitácora
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="cfg-titulo-ui">Título Visible de la Bitácora para el Equipo</label>
+      <input type="text" id="cfg-titulo-ui" class="form-control" value="Bitácora de Centro de Operaciones">
+    </div>
+  </div>
+
+  <!-- Botón Guardar Flotante / Inferior -->
+  <div style="display:flex; justify-content:flex-end; gap:1rem; margin-top:2rem;">
+    <button type="submit" class="btn btn-primary" style="padding:0.75rem 2rem; font-size:1rem;">
+      <i class="bi bi-check2-all"></i> Guardar y Aplicar Cambios en Caliente
+    </button>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='Js/config_region.js') }}"></script>
+{% endblock %}

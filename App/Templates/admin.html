@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Administración del Sistema - DOC{% endblock %}
+{% block page_title %}Administración Global (DOC){% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='Css/admin.css') }}">
+{% endblock %}
+
+{% block navbar_actions %}
+<div style="display: flex; gap: 0.5rem;">
+  <button class="btn btn-secondary btn-sm" onclick="abrirModalNuevaRegion()">
+    <i class="bi bi-globe-plus"></i> Nueva Región
+  </button>
+  <button class="btn btn-primary btn-sm" onclick="abrirModalNuevoUsuario()">
+    <i class="bi bi-person-plus"></i> Nuevo Usuario
+  </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Tabs de navegación Admin -->
+<div class="admin-tabs">
+  <button class="admin-tab-btn active" data-tab="tab-usuarios">
+    <i class="bi bi-people"></i> Usuarios y Operadores
+  </button>
+  <button class="admin-tab-btn" data-tab="tab-regiones">
+    <i class="bi bi-geo-alt"></i> Centros de Operaciones / Regiones
+  </button>
+</div>
+
+<!-- TAB: USUARIOS -->
+<div id="tab-usuarios" class="admin-tab-content active">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <i class="bi bi-person-badge"></i> Cuentas de Usuarios Registradas
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="abrirModalNuevoUsuario()">
+        <i class="bi bi-plus-lg"></i> Agregar Usuario
+      </button>
+    </div>
+    <div class="table-responsive">
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Usuario / Email</th>
+            <th>Nombre Completo</th>
+            <th>Rol</th>
+            <th>Región Asignada</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody id="usuarios-tbody">
+          <tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Cargando usuarios...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: REGIONES -->
+<div id="tab-regiones" class="admin-tab-content">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <i class="bi bi-diagram-3"></i> Regiones y Centros de Operaciones
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="abrirModalNuevaRegion()">
+        <i class="bi bi-plus-lg"></i> Agregar Región
+      </button>
+    </div>
+    <div class="table-responsive">
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Código</th>
+            <th>Nombre del Centro de Operaciones</th>
+            <th>Descripción</th>
+            <th>Estado</th>
+            <th style="text-align:right;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="regiones-tbody">
+          <tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Cargando regiones...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Nuevo Usuario -->
+<div id="modal-nuevo-usuario" class="modal-overlay">
+  <div class="modal-container" style="max-width: 550px;">
+    <div class="modal-header">
+      <h3 class="modal-title"><i class="bi bi-person-plus"></i> Alta de Usuario / Operador</h3>
+      <button class="modal-close">&times;</button>
+    </div>
+    <form id="form-nuevo-usuario">
+      <div class="modal-body">
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Username <span style="color:var(--danger)">*</span></label>
+            <input type="text" id="user-username" class="form-control" placeholder="Ej: op_rodriguez" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Corporativo <span style="color:var(--danger)">*</span></label>
+            <input type="email" id="user-email" class="form-control" placeholder="nombre@datacenter.corp" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Nombre Completo <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="user-nombre" class="form-control" placeholder="Ej: Juan Pérez" required>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Rol en el Sistema <span style="color:var(--danger)">*</span></label>
+            <select id="user-rol" class="form-select" required>
+              <option value="operador">Operador (Carga de tareas)</option>
+              <option value="sub_admin">Supervisor DOC (sub-admin - Configura Front y Cierra turnos)</option>
+              <option value="admin">Administrador Global (Admin)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Región / Datacenter</label>
+            <select id="user-region" class="form-select">
+              <option value="">Global / Sin región fija</option>
+              {% for r in regiones %}
+                <option value="{{ r.id }}">{{ r.nombre }} ({{ r.codigo }})</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Contraseña Inicial</label>
+          <input type="password" id="user-password" class="form-control" placeholder="demo123 (Por defecto: demo123)">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-nuevo-usuario')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Crear Usuario</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Nueva Región -->
+<div id="modal-nueva-region" class="modal-overlay">
+  <div class="modal-container" style="max-width: 500px;">
+    <div class="modal-header">
+      <h3 class="modal-title"><i class="bi bi-geo-alt"></i> Alta de Nueva Región</h3>
+      <button class="modal-close">&times;</button>
+    </div>
+    <form id="form-nueva-region">
+      <div class="modal-body">
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Código Región <span style="color:var(--danger)">*</span></label>
+            <input type="text" id="reg-codigo" class="form-control" placeholder="Ej: BR-SP, CL-SCL" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nombre Región <span style="color:var(--danger)">*</span></label>
+            <input type="text" id="reg-nombre" class="form-control" placeholder="Ej: Datacenter São Paulo" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Descripción</label>
+          <textarea id="reg-desc" class="form-control" rows="2" placeholder="Ubicación física, tier, etc."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-nueva-region')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Crear Región</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='Js/admin.js') }}"></script>
+{% endblock %}

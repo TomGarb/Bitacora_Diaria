@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Bitácoras - DOC{% endblock %}
+{% block page_title %}Gestión de Bitácoras y Turnos{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='Css/bitacora.css') }}">
+{% endblock %}
+
+{% block navbar_actions %}
+<button class="btn btn-primary btn-sm" onclick="abrirModalNuevaBitacora()">
+  <i class="bi bi-plus-circle"></i> Abrir Nuevo Turno
+</button>
+{% endblock %}
+
+{% block content %}
+<input type="hidden" id="current-region-id" value="{{ region.id if region else 1 }}">
+
+<!-- Barra de Filtros -->
+<div class="card" style="margin-bottom: 1.5rem; padding: 1rem;">
+  <div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:center;">
+    {% if current_user and current_user.is_admin() %}
+    <div style="min-width: 220px;">
+      <label class="form-label" style="margin-bottom:0.2rem;">Filtrar por Región:</label>
+      <select id="filter-region" class="form-select">
+        <option value="">Todas las regiones</option>
+        {% for r in regiones %}
+          <option value="{{ r.id }}" {% if region and region.id == r.id %}selected{% endif %}>{{ r.nombre }} ({{ r.codigo }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% else %}
+    <input type="hidden" id="filter-region" value="{{ region.id if region else 1 }}">
+    {% endif %}
+
+    <div style="min-width: 180px;">
+      <label class="form-label" style="margin-bottom:0.2rem;">Estado:</label>
+      <select id="filter-estado-bitacora" class="form-select">
+        <option value="">Todos los estados</option>
+        <option value="abierta">Abiertas</option>
+        <option value="cerrada">Cerradas</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<!-- Listado de Bitácoras -->
+<div id="bitacoras-list-container">
+  <!-- Carga dinámica vía JS -->
+</div>
+
+<!-- MODAL: Abrir Nueva Bitácora / Turno -->
+<div id="modal-nueva-bitacora" class="modal-overlay">
+  <div class="modal-container" style="max-width: 500px;">
+    <div class="modal-header">
+      <h3 class="modal-title"><i class="bi bi-journal-plus"></i> Apertura de Turno</h3>
+      <button class="modal-close">&times;</button>
+    </div>
+    <form id="form-nueva-bitacora">
+      <div class="modal-body">
+        <input type="hidden" id="nueva-region-id" value="{{ region.id if region else 1 }}">
+
+        <div class="form-group">
+          <label class="form-label" for="nueva-fecha">Fecha del Registro</label>
+          <input type="date" id="nueva-fecha" class="form-control" value="{{ None }}" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="nuevo-turno">Turno Operativo</label>
+          <select id="nuevo-turno" class="form-select" required>
+            {% if turnos %}
+              {% for t in turnos %}
+                {% if t.get('activo', true) %}
+                  <option value="{{ t.id }}">{{ t.nombre }} ({{ t.horario }})</option>
+                {% endif %}
+              {% endfor %}
+            {% else %}
+              <option value="manana">Mañana (07:00 a 15:00)</option>
+              <option value="tarde">Tarde (15:00 a 23:00)</option>
+              <option value="noche">Noche (23:00 a 07:00)</option>
+              <option value="central">Central (09:00 a 18:00)</option>
+            {% endif %}
+          </select>
+        </div>
+
+        <div style="font-size:0.8rem; color:var(--text-secondary); background:rgba(59, 130, 246, 0.1); padding:0.75rem; border-radius:var(--radius-sm); border:1px solid rgba(59, 130, 246, 0.25);">
+          <i class="bi bi-info-circle"></i> Al abrir una bitácora, todos los operadores de la región podrán cargar y asociar tareas al turno en curso.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-nueva-bitacora')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Abrir Turno</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Cerrar Bitácora / Turno -->
+<div id="modal-cerrar-bitacora" class="modal-overlay">
+  <div class="modal-container" style="max-width: 500px;">
+    <div class="modal-header">
+      <h3 class="modal-title"><i class="bi bi-lock"></i> Cierre de Turno de Bitácora</h3>
+      <button class="modal-close">&times;</button>
+    </div>
+    <form id="form-cerrar-bitacora">
+      <div class="modal-body">
+        <p style="font-size:0.875rem; color:var(--text-secondary); margin-bottom:1rem;">
+          Al cerrar el turno, se consolidará el registro de actividades para el pase de guardia y generación de reportes de correo.
+        </p>
+
+        <div class="form-group">
+          <label class="form-label" for="observaciones-cierre">Novedades y Observaciones de Pase de Guardia</label>
+          <textarea id="observaciones-cierre" class="form-control" rows="4" placeholder="Indique pendientes críticos, relevos o novedades para el próximo turno..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-cerrar-bitacora')">Cancelar</button>
+        <button type="submit" class="btn btn-danger">Confirmar Cierre</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Inicializar fecha de hoy por defecto en el input
+  document.getElementById('nueva-fecha').value = new Date().toISOString().split('T')[0];
+</script>
+<script src="{{ url_for('static', filename='Js/bitacora.js') }}"></script>
+{% endblock %}

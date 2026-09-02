@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Subtareas - DOC{% endblock %}
+{% block page_title %}Módulo de Subtareas{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='Css/subtareas.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">
+      <i class="bi bi-list-nested"></i> Detalle de Subtareas
+    </div>
+  </div>
+  <div class="card-body">
+    <p style="color:var(--text-secondary);">Las subtareas se gestionan de forma integrada desde cada tarea en el módulo principal de tareas.</p>
+    <a href="{{ url_for('tareas.index') }}" class="btn btn-primary btn-sm" style="margin-top:1rem;">
+      <i class="bi bi-arrow-left"></i> Ir a Tareas
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='Js/subtareas.js') }}"></script>
+{% endblock %}

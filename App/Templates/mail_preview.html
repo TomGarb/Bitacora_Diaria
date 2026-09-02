@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Vista Previa de Mail - DOC{% endblock %}
+{% block page_title %}Vista Previa del Mail de Resumen{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='Css/mail_preview.css') }}">
+{% endblock %}
+
+{% block navbar_actions %}
+<button id="btn-copy-mail" class="btn btn-secondary btn-sm">
+  <i class="bi bi-clipboard"></i> Copiar Texto
+</button>
+<button id="btn-send-simulated-mail" class="btn btn-primary btn-sm">
+  <i class="bi bi-send"></i> Simular Envío de Mail
+</button>
+{% endblock %}
+
+{% block content %}
+<!-- Banner Informativo de Regla de Visibilidad -->
+<div id="mail-visibility-banner" class="toast toast-info" style="position:relative; right:auto; bottom:auto; margin-bottom:1.5rem; animation:none;">
+  <i class="bi bi-info-circle-fill"></i>
+  <span>Cargando reglas de visibilidad...</span>
+</div>
+
+<!-- Ventana de Cliente de Correo Simulado -->
+<div class="mail-client-window">
+  
+  <div class="mail-header-bar">
+    <div class="mail-header-row">
+      <strong>Para:</strong>
+      <span id="mail-to">doc-ops@datacenter.corp</span>
+    </div>
+    <div class="mail-header-row">
+      <strong>Asunto:</strong>
+      <span id="mail-subject" style="font-weight:700;">[DOC BITACORA] Resumen de Turno</span>
+    </div>
+    <div class="mail-header-row">
+      <strong>Emisor:</strong>
+      <span id="mail-generated-by">Operador DOC</span>
+    </div>
+  </div>
+
+  <div id="mail-printable-area" class="mail-body-content">
+    
+    <!-- Encabezado Corporativo -->
+    <div class="mail-brand-header">
+      <div>
+        <h2 style="font-size:1.25rem; font-weight:700; margin:0;">DOC - CENTRO DE OPERACIONES</h2>
+        <div style="font-size:0.85rem; opacity:0.8;">Reporte de Novedades y Pase de Guardia</div>
+      </div>
+      <div style="text-align:right;">
+        <div id="mail-region-name" style="font-weight:700;">Buenos Aires</div>
+        <div id="mail-shift-name" style="font-size:0.85rem;">TURNO MAÑANA</div>
+        <div id="mail-date-name" style="font-size:0.8rem; opacity:0.7;">2026-09-02</div>
+      </div>
+    </div>
+
+    <!-- Tabla Resumen Ejecutivo -->
+    <h3 style="font-size:1rem; color:#0f172a; margin-bottom:0.5rem;">Resumen de Estado de Actividades</h3>
+    <table class="mail-summary-table">
+      <thead>
+        <tr>
+          <th>Total Actividades</th>
+          <th>Completadas</th>
+          <th>En Progreso</th>
+          <th>Pendientes</th>
+          <th>Actividades Programadas</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong id="stat-total" style="font-size:1.1rem; color:#2563eb;">0</strong></td>
+          <td><strong id="stat-comp" style="font-size:1.1rem; color:#16a34a;">0</strong></td>
+          <td><strong id="stat-prog" style="font-size:1.1rem; color:#2563eb;">0</strong></td>
+          <td><strong id="stat-pend" style="font-size:1.1rem; color:#d97706;">0</strong></td>
+          <td><strong id="stat-prog-act" style="font-size:1.1rem; color:#7c3aed;">0</strong></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Detalle de Tareas Visibles -->
+    <h3 style="font-size:1rem; color:#0f172a; margin-bottom:0.75rem;">Detalle de Casos y Tareas Registradas</h3>
+    
+    <div id="mail-tasks-container">
+      <!-- Tareas renderizadas dinámicamente según visibilidad -->
+    </div>
+
+    <!-- Pie de Correo -->
+    <div style="margin-top:2rem; padding-top:1rem; border-top:1px solid #e2e8f0; font-size:0.75rem; color:#64748b; text-align:center;">
+      Este es un reporte generado automáticamente por el sistema de Bitácoras de Datacenter (DOC).
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='Js/mail_preview.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Bitácora DOC{% endblock %}
+{% block page_title %}Panel de Control de Operaciones (DOC){% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='Css/dashboard.css') }}">
+{% endblock %}
+
+{% block navbar_actions %}
+<button id="btn-refresh-dashboard" class="btn btn-secondary btn-sm" title="Actualizar datos">
+  <i class="bi bi-arrow-clockwise"></i> Actualizar
+</button>
+<a href="{{ url_for('tareas.index') }}" class="btn btn-primary btn-sm">
+  <i class="bi bi-plus-lg"></i> Cargar Tarea
+</a>
+{% endblock %}
+
+{% block content %}
+<!-- Banner de Bitácora Activa -->
+<div class="dashboard-banner">
+  <div class="banner-info">
+    <h3>
+      {% if bitacora_actual %}
+        Bitácora de Turno Activa: <span style="color: var(--primary);">{{ bitacora_actual.turno.upper() }}</span>
+      {% else %}
+        No hay bitácora abierta hoy
+      {% endif %}
+    </h3>
+    <div class="banner-meta">
+      <div class="banner-meta-item">
+        <i class="bi bi-calendar3"></i>
+        <span>{{ bitacora_actual.fecha if bitacora_actual else 'Sin fecha' }}</span>
+      </div>
+      <div class="banner-meta-item">
+        <i class="bi bi-geo-alt"></i>
+        <span>{{ region.nombre if region else 'Todas las regiones' }}</span>
+      </div>
+      <div class="banner-meta-item">
+        <i class="bi bi-circle-fill" style="color: {% if bitacora_actual and bitacora_actual.estado == 'abierta' %}var(--success){% else %}var(--warning){% endif %}; font-size: 0.65rem;"></i>
+        <span>Estado: <strong>{{ bitacora_actual.estado if bitacora_actual else 'Cerrada' }}</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 0.5rem;">
+    <a href="{{ url_for('mail_preview.index') }}" class="btn btn-secondary btn-sm">
+      <i class="bi bi-envelope-paper"></i> Vista Previa Resumen Mail
+    </a>
+    <a href="{{ url_for('bitacora.index') }}" class="btn btn-primary btn-sm">
+      <i class="bi bi-journal-plus"></i> Gestión de Turnos
+    </a>
+  </div>
+</div>
+
+<!-- Grid de KPIs -->
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div>
+      <div class="kpi-value" id="kpi-total">-</div>
+      <div class="kpi-label">Total Tareas</div>
+    </div>
+    <div class="kpi-icon icon-blue">
+      <i class="bi bi-stack"></i>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div>
+      <div class="kpi-value" id="kpi-pendientes">-</div>
+      <div class="kpi-label">Pendientes</div>
+    </div>
+    <div class="kpi-icon icon-yellow">
+      <i class="bi bi-hourglass-split"></i>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div>
+      <div class="kpi-value" id="kpi-en-progreso">-</div>
+      <div class="kpi-label">En Progreso</div>
+    </div>
+    <div class="kpi-icon icon-blue">
+      <i class="bi bi-play-circle"></i>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div>
+      <div class="kpi-value" id="kpi-completadas">-</div>
+      <div class="kpi-label">Completadas</div>
+    </div>
+    <div class="kpi-icon icon-green">
+      <i class="bi bi-check2-circle"></i>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div>
+      <div class="kpi-value" id="kpi-programadas">-</div>
+      <div class="kpi-label">Actividades Programadas</div>
+    </div>
+    <div class="kpi-icon icon-purple">
+      <i class="bi bi-calendar-event"></i>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div>
+      <div class="kpi-value" id="kpi-mis-tareas">-</div>
+      <div class="kpi-label">Mis Tareas Asignadas</div>
+    </div>
+    <div class="kpi-icon icon-blue">
+      <i class="bi bi-person-check"></i>
+    </div>
+  </div>
+</div>
+
+<!-- Layout de Distribución y Actividad Reciente -->
+<div class="grid-3" style="grid-template-columns: 1fr 2fr;">
+  <!-- Columna Izquierda: Tipos de tareas en la región -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <i class="bi bi-pie-chart"></i> Distribución de Actividades
+      </div>
+    </div>
+    <div class="card-body">
+      <div id="type-distribution-container" class="type-distribution-list">
+        <!-- Renderizado dinámico vía JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Columna Derecha: Tareas Recientes -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <i class="bi bi-activity"></i> Últimas Tareas del Turno
+      </div>
+      <a href="{{ url_for('tareas.index') }}" class="btn-sm btn-secondary" style="font-size:0.75rem;">Ver todas</a>
+    </div>
+    <div class="table-responsive">
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th>Ticket</th>
+            <th>Título / Cliente</th>
+            <th>Tipo</th>
+            <th>Estado</th>
+            <th>Operador</th>
+            <th>Programada</th>
+          </tr>
+        </thead>
+        <tbody id="recent-tasks-tbody">
+          <tr>
+            <td colspan="6" style="text-align: center; color: var(--text-muted);">Cargando tareas recientes...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='Js/dashboard.js') }}"></script>
+{% endblock %}

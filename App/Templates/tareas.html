@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}Tareas de Bitácora - DOC{% endblock %}
+{% block page_title %}Tareas del Turno{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='Css/tareas.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='Css/subtareas.css') }}">
+{% endblock %}
+
+{% block navbar_actions %}
+<button class="btn btn-primary btn-sm" onclick="abrirModalNuevaTarea()">
+  <i class="bi bi-plus-circle"></i> Nueva Tarea
+</button>
+{% endblock %}
+
+{% block content %}
+<input type="hidden" id="region-id-holder" value="{{ region.id if region else 1 }}">
+
+<!-- Toolbar y Filtros -->
+<div class="toolbar">
+  <div class="filters-group">
+    <div class="search-input-wrapper">
+      <i class="bi bi-search"></i>
+      <input type="text" id="search-task" class="form-control" placeholder="Buscar por ticket, título o cliente...">
+    </div>
+
+    <select id="filter-tipo" class="form-select" style="max-width: 200px;">
+      <option value="">Todos los tipos</option>
+    </select>
+
+    <select id="filter-estado" class="form-select" style="max-width: 170px;">
+      <option value="">Todos los estados</option>
+      <option value="pendiente">Pendiente</option>
+      <option value="en_progreso">En Progreso</option>
+      <option value="completada">Completada</option>
+      <option value="cancelada">Cancelada</option>
+    </select>
+
+    <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; color: var(--text-secondary); cursor: pointer;">
+      <input type="checkbox" id="filter-mis-tareas"> Mis tareas
+    </label>
+
+    <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; color: var(--text-secondary); cursor: pointer;">
+      <input type="checkbox" id="filter-programadas"> Solo programadas
+    </label>
+  </div>
+
+  <button class="btn btn-secondary btn-sm" onclick="cargarTareas()" title="Refrescar">
+    <i class="bi bi-arrow-clockwise"></i>
+  </button>
+</div>
+
+<!-- Tabla de Tareas -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">
+      <i class="bi bi-card-checklist"></i> Registro de Tareas de la Bitácora
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="custom-table">
+      <thead>
+        <tr>
+          <th>Ticket / Fecha</th>
+          <th>Título y Descripción</th>
+          <th>Cliente</th>
+          <th>Tipo de Tarea</th>
+          <th>Estado</th>
+          <th>Prog.</th>
+          <th style="text-align: right;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tareas-tbody">
+        <tr>
+          <td colspan="7" style="text-align: center; color: var(--text-muted);">Cargando tareas...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MODAL: Crear / Editar Tarea -->
+<div id="modal-tarea" class="modal-overlay">
+  <div class="modal-container" style="max-width: 700px;">
+    <div class="modal-header">
+      <h3 id="modal-tarea-title" class="modal-title">Nueva Tarea de Bitácora</h3>
+      <button class="modal-close">&times;</button>
+    </div>
+    <form id="form-tarea">
+      <div class="modal-body">
+        
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label" for="ticket">Ticket / Identificador <span style="color:var(--danger)">*</span></label>
+            <input type="text" id="ticket" name="ticket" class="form-control" placeholder="Ej: INC-9821, SRV-442" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="cliente">Cliente / Cuenta <span style="color:var(--danger)">*</span></label>
+            <input type="text" id="cliente" name="cliente" class="form-control" placeholder="Ej: Banco Central, Telecom, etc." required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="titulo">Título de la Tarea <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="titulo" name="titulo" class="form-control" placeholder="Breve título descriptivo" required>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label" for="tipo_tarea">Tipo de Actividad <span style="color:var(--danger)">*</span></label>
+            <select id="tipo_tarea" name="tipo_tarea" class="form-select" required>
+              <option value="">-- Seleccione Tipo --</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="estado">Estado Inicial <span style="color:var(--danger)">*</span></label>
+            <select id="estado" name="estado" class="form-select" required>
+              <option value="pendiente">Pendiente</option>
+              <option value="en_progreso">En Progreso</option>
+              <option value="completada">Completada</option>
+              <option value="cancelada">Cancelada</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="descripcion">Descripción y Acciones Realizadas <span style="color:var(--danger)">*</span></label>
+          <textarea id="descripcion" name="descripcion" class="form-control" placeholder="Detalle técnico de la actividad..." required></textarea>
+        </div>
+
+        <!-- Contenedor de Campos Extra Dinámicos (ej: credenciales especiales) -->
+        <div id="dynamic-fields-container" style="display:none; background: rgba(15, 23, 42, 0.4); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 1rem;">
+        </div>
+
+        <!-- Switch Actividad Programada -->
+        <div class="form-group" style="margin-bottom: 0.5rem;">
+          <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; font-weight: 600; cursor: pointer;">
+            <input type="checkbox" id="es_actividad_programada">
+            <span><i class="bi bi-calendar-event"></i> Es una Actividad Programada (Visible para todos los operadores en el mail de resumen)</span>
+          </label>
+        </div>
+
+        <!-- Fechas de programación -->
+        <div id="fechas-programadas-box" class="grid-2" style="display: none; margin-bottom: 1rem; background: var(--bg-main); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Fecha / Hora Inicio</label>
+            <input type="datetime-local" id="fecha_programada_inicio" class="form-control">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Fecha / Hora Fin</label>
+            <input type="datetime-local" id="fecha_programada_fin" class="form-control">
+          </div>
+        </div>
+
+        <!-- Subtareas Builder -->
+        <div class="subtasks-builder-box">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+            <span style="font-size:0.825rem; font-weight:600; color:var(--text-secondary);"><i class="bi bi-list-nested"></i> Subtareas Opcionales</span>
+            <button type="button" id="btn-add-subtask-row" class="btn btn-secondary btn-sm" style="font-size:0.75rem; padding:0.2rem 0.5rem;">
+              <i class="bi bi-plus"></i> Agregar Subtarea
+            </button>
+          </div>
+          <div id="subtasks-rows-container">
+            <!-- Filas dinámicas de subtareas -->
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-tarea')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-save"></i> Guardar Tarea
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Detalle de Tarea y Gestión de Subtareas -->
+<div id="modal-detalle-tarea" class="modal-overlay">
+  <div class="modal-container" style="max-width: 650px;">
+    <div class="modal-header">
+      <h3 class="modal-title"><i class="bi bi-ticket-detailed"></i> Detalle de Tarea: <span id="detalle-ticket" style="color:var(--primary);"></span></h3>
+      <button class="modal-close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.75rem; margin-bottom:1rem; font-size:0.875rem;">
+        <div><strong>Título:</strong> <span id="detalle-titulo"></span></div>
+        <div><strong>Cliente:</strong> <span id="detalle-cliente"></span></div>
+        <div><strong>Tipo:</strong> <span id="detalle-tipo" style="text-transform:capitalize;"></span></div>
+        <div><strong>Estado:</strong> <span id="detalle-estado"></span></div>
+        <div><strong>Operador Creador:</strong> <span id="detalle-operador"></span></div>
+      </div>
+
+      <div class="card" style="padding:0.75rem; background:#0f172a; margin-bottom:1rem;">
+        <strong style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-bottom:0.25rem;">Descripción:</strong>
+        <div id="detalle-descripcion" style="font-size:0.875rem; white-space:pre-wrap;"></div>
+      </div>
+
+      <!-- Campos Dinámicos Extra -->
+      <div class="card" style="padding:0.75rem; background:#0f172a; margin-bottom:1rem;">
+        <strong style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-bottom:0.25rem;">Campos Específicos:</strong>
+        <div id="detalle-campos-extra" style="font-size:0.85rem; display:flex; flex-direction:column; gap:0.25rem;"></div>
+      </div>
+
+      <!-- Subtareas Registradas -->
+      <h4 style="font-size:0.9rem; font-weight:700; margin-bottom:0.5rem; display:flex; align-items:center; gap:0.4rem;">
+        <i class="bi bi-list-nested"></i> Subtareas Asociadas
+      </h4>
+      <div id="detalle-subtareas-list">
+        <!-- Lista de subtareas -->
+      </div>
+
+      <!-- Formulario para agregar subtarea rápida -->
+      <form id="form-nueva-subtarea" onsubmit="agregarSubtareaDesdeDetalle(event)" style="margin-top:1rem; padding:0.75rem; background:rgba(15, 23, 42, 0.4); border:1px solid var(--border-color); border-radius:var(--radius-sm);">
+        <div style="font-size:0.8rem; font-weight:600; color:var(--text-secondary); margin-bottom:0.4rem;">+ Agregar nueva subtarea a este caso</div>
+        <div class="grid-2" style="margin-bottom:0.4rem;">
+          <input type="text" id="sub-ticket-input" class="form-control form-control-sm" placeholder="Ticket subtarea (ej: SUB-01)" required>
+          <input type="text" id="sub-titulo-input" class="form-control form-control-sm" placeholder="Título subtarea" required>
+        </div>
+        <div class="grid-2" style="margin-bottom:0.4rem;">
+          <select id="sub-estado-input" class="form-select form-control-sm">
+            <option value="pendiente">Pendiente</option>
+            <option value="en_progreso">En Progreso</option>
+            <option value="completada">Completada</option>
+            <option value="cancelada">Cancelada</option>
+          </select>
+          <input type="text" id="sub-desc-input" class="form-control form-control-sm" placeholder="Descripción opcional">
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm" style="width:100%;">
+          <i class="bi bi-plus-lg"></i> Agregar Subtarea
+        </button>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" onclick="closeModal('modal-detalle-tarea')">Cerrar</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='Js/subtareas.js') }}"></script>
+<script src="{{ url_for('static', filename='Js/tareas.js') }}"></script>
+{% endblock %}

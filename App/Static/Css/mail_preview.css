@@ -1,0 +1,107 @@
+/* Estilos específicos de la Vista Previa de Correo */
+
+.mail-client-window {
+  background: #ffffff;
+  color: #1e293b;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.mail-header-bar {
+  background: #f1f5f9;
+  border-bottom: 1px solid #cbd5e1;
+  padding: 1rem 1.5rem;
+}
+
+.mail-header-row {
+  display: flex;
+  margin-bottom: 0.4rem;
+  font-size: 0.85rem;
+}
+
+.mail-header-row strong {
+  width: 90px;
+  color: #64748b;
+}
+
+.mail-header-row span {
+  color: #0f172a;
+  font-weight: 500;
+}
+
+.mail-body-content {
+  padding: 2rem;
+  font-family: Arial, sans-serif;
+  line-height: 1.6;
+}
+
+.mail-brand-header {
+  background: #0f172a;
+  color: #ffffff;
+  padding: 1.25rem 1.5rem;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.mail-summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+}
+
+.mail-summary-table th {
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  padding: 0.6rem 0.8rem;
+  text-align: left;
+}
+
+.mail-summary-table td {
+  border: 1px solid #e2e8f0;
+  padding: 0.6rem 0.8rem;
+  color: #1e293b;
+}
+
+.mail-task-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: #ffffff;
+}
+
+.mail-task-card.is-programada {
+  border-left: 4px solid #8b5cf6;
+  background: #faf5ff;
+}
+
+.mail-task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.mail-badge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.mail-badge-pendiente { background: #fef3c7; color: #92400e; }
+.mail-badge-en_progreso { background: #dbeafe; color: #1e40af; }
+.mail-badge-completada { background: #d1fae5; color: #065f46; }
+.mail-badge-cancelada { background: #fee2e2; color: #991b1b; }
+.mail-badge-prog { background: #ede9fe; color: #5b21b6; }
