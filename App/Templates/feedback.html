@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Feedback & Modificaciones - DOC{% endblock %}
+{% block page_title %}Feedback, Reporte de Errores y Modificaciones{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='Css/feedback.css') }}">
+{% endblock %}
+
+{% block navbar_actions %}
+<button class="btn btn-primary btn-sm" onclick="abrirModalNuevoFeedback()">
+  <i class="bi bi-plus-circle"></i> Nuevo Reporte / Solicitud
+</button>
+{% endblock %}
+
+{% block content %}
+<input type="hidden" id="es-supervisor-holder" value="{{ 'true' if user.is_sub_admin() else 'false' }}">
+
+<!-- Filtros y Toolbar -->
+<div class="toolbar">
+  <div class="filters-group">
+    <select id="filter-fb-tipo" class="form-select" style="max-width: 200px;">
+      <option value="">Todos los tipos</option>
+      <option value="error_sistema">Reporte de Error</option>
+      <option value="modificacion_tarea">Modificación de Tarea DC</option>
+      <option value="sugerencia_mejora">Sugerencia de Mejora</option>
+      <option value="otro">Otro</option>
+    </select>
+
+    <select id="filter-fb-estado" class="form-select" style="max-width: 170px;">
+      <option value="">Todos los estados</option>
+      <option value="pendiente">Pendiente</option>
+      <option value="en_revision">En Revisión</option>
+      <option value="resuelto">Resuelto</option>
+      <option value="descartado">Descartado</option>
+    </select>
+  </div>
+
+  <button class="btn btn-secondary btn-sm" onclick="cargarFeedbacks()" title="Refrescar">
+    <i class="bi bi-arrow-clockwise"></i>
+  </button>
+</div>
+
+<!-- Contenedor de Reportes -->
+<div id="feedbacks-container">
+  <div style="color:var(--text-muted); text-align:center; padding:1.5rem;">Cargando reportes...</div>
+</div>
+
+<!-- MODAL: Enviar Nuevo Reporte -->
+<div id="modal-nuevo-feedback" class="modal-overlay">
+  <div class="modal-container" style="max-width: 600px;">
+    <div class="modal-header">
+      <h3 class="modal-title"><i class="bi bi-chat-left-text"></i> Nuevo Reporte o Solicitud</h3>
+      <button class="modal-close">&times;</button>
+    </div>
+    <form id="form-nuevo-feedback">
+      <div class="modal-body">
+        
+        <div class="form-group">
+          <label class="form-label" for="fb-tipo">Tipo de Solicitud <span style="color:var(--danger)">*</span></label>
+          <select id="fb-tipo" class="form-select" required>
+            <option value="error_sistema">🐞 Reporte de Error en la Aplicación</option>
+            <option value="modificacion_tarea">🛠️ Solicitud de Modificación en Tareas de mi DC</option>
+            <option value="sugerencia_mejora">💡 Sugerencia de Mejora General</option>
+            <option value="otro">📋 Otra Consulta</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="fb-asunto">Asunto / Título Resumido <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="fb-asunto" class="form-control" placeholder="Ej: Error al cargar tarea de backup, o agregar campo de Switch en DC Buenos Aires" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="fb-mensaje">Descripción Detallada <span style="color:var(--danger)">*</span></label>
+          <textarea id="fb-mensaje" class="form-control" rows="4" placeholder="Explique en detalle el error encontrado o la modificación que se requiere en su centro de operaciones..." required></textarea>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-nuevo-feedback')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-send"></i> Enviar Reporte
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Responder / Gestionar Reporte (Supervisores y Admins) -->
+<div id="modal-responder-feedback" class="modal-overlay">
+  <div class="modal-container" style="max-width: 620px;">
+    <div class="modal-header">
+      <h3 class="modal-title"><i class="bi bi-pencil-square"></i> Gestionar Reporte</h3>
+      <button class="modal-close">&times;</button>
+    </div>
+    <form id="form-responder-feedback">
+      <input type="hidden" id="resp-fb-id">
+      <div class="modal-body">
+        <div style="margin-bottom:1rem;">
+          <h4 id="resp-fb-titulo" style="font-size:1.1rem; color:var(--primary); margin-bottom:0.25rem;"></h4>
+          <div id="resp-fb-usuario" style="font-size:0.8rem; color:var(--text-muted);"></div>
+        </div>
+
+        <div class="card" style="padding:0.75rem; background:#0f172a; margin-bottom:1rem;">
+          <strong style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-bottom:0.25rem;">Mensaje del operador:</strong>
+          <div id="resp-fb-mensaje" style="font-size:0.875rem; white-space:pre-wrap;"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="resp-fb-estado">Estado del Reporte <span style="color:var(--danger)">*</span></label>
+          <select id="resp-fb-estado" class="form-select" required>
+            <option value="pendiente">Pendiente</option>
+            <option value="en_revision">En Revisión / Análisis</option>
+            <option value="resuelto">Resuelto / Aplicado</option>
+            <option value="descartado">Descartado</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="resp-fb-texto">Respuesta u Observación de Supervisión / Admin</label>
+          <textarea id="resp-fb-texto" class="form-control" rows="3" placeholder="Indique la respuesta al operador o las acciones realizadas..."></textarea>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-responder-feedback')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-save"></i> Guardar Respuesta
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='Js/feedback.js') }}"></script>
+{% endblock %}

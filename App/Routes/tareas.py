@@ -102,7 +102,10 @@ def crear_tarea():
     data = request.get_json() or {}
 
     # Validaciones obligatorias de campos base
-    required_fields = ['ticket', 'titulo', 'cliente', 'estado', 'descripcion', 'tipo_tarea']
+    required_fields = ['ticket', 'cliente', 'estado', 'descripcion', 'tipo_tarea']
+    if data.get('tipo_tarea') != 'alta_credencial_especial':
+        required_fields.append('titulo')
+
     missing = [field for field in required_fields if not data.get(field)]
     if missing:
         return jsonify({'error': f'Faltan campos obligatorios: {", ".join(missing)}'}), 400
@@ -133,8 +136,8 @@ def crear_tarea():
     tipo_tarea = data.get('tipo_tarea')
     es_programada = bool(data.get('es_actividad_programada', False))
     
-    # Equipos, técnicos y mantenimientos son siempre programados por definición
-    if tipo_tarea in ['acceso_equipos', 'retiro_equipos', 'acceso_tecnicos', 'mantenimiento']:
+    # Credenciales especiales, equipos, técnicos y mantenimientos son siempre programados por definición
+    if tipo_tarea in ['alta_credencial_especial', 'acceso_equipos', 'retiro_equipos', 'acceso_tecnicos', 'mantenimiento']:
         es_programada = True
 
     # Parseo y validación de fechas
@@ -153,6 +156,9 @@ def crear_tarea():
                 pass
 
         # Validaciones específicas de fechas por tipo
+        if tipo_tarea == 'alta_credencial_especial' and (not inicio_prog or not fin_prog):
+            return jsonify({'error': 'Las fechas y horas de inicio Y de finalización son obligatorias para Alta de Credenciales Especiales'}), 400
+
         if tipo_tarea in ['acceso_equipos', 'retiro_equipos', 'acceso_tecnicos'] and not inicio_prog:
             return jsonify({'error': 'La fecha y hora de inicio es obligatoria para ingresos/retiros de equipos y acceso de técnicos'}), 400
         
@@ -196,12 +202,20 @@ def crear_tarea():
         if campos_extra.get('cantidad_contactos') is None or str(campos_extra.get('cantidad_contactos')).strip() == '':
             return jsonify({'error': 'Debe indicar la cantidad de contactos que tuvieron con nosotros'}), 400
 
+    # Título: obligatorio para la mayoría, auto-completado para credenciales especiales
+    titulo = (data.get('titulo') or '').strip()
+    if tipo_tarea == 'alta_credencial_especial' and not titulo:
+        ticket_cli = campos_extra.get('ticket_cliente', data.get('ticket', '').strip())
+        titulo = f"Alta de Credenciales Especiales - {ticket_cli}"
+    elif not titulo:
+        return jsonify({'error': 'El título de la tarea es obligatorio'}), 400
+
     nueva_tarea = Tarea(
         bitacora_id=bitacora_id,
         operador_id=user.id,
         tipo_tarea=tipo_tarea,
         ticket=data.get('ticket').strip(),
-        titulo=data.get('titulo').strip(),
+        titulo=titulo,
         cliente=data.get('cliente').strip(),
         estado=data.get('estado', 'pendiente'),
         descripcion=data.get('descripcion').strip(),

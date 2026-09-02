@@ -9,6 +9,7 @@ from App.Models.region_config import RegionConfig, TIPOS_TAREA_DEFAULT, CAMPOS_E
 from App.Models.bitacora import Bitacora
 from App.Models.tarea import Tarea
 from App.Models.subtarea import Subtarea
+from App.Models.feedback import Feedback
 
 def seed():
     app = create_app()
@@ -155,17 +156,19 @@ def seed():
         Tarea.query.filter_by(bitacora_id=bitacora_hoy.id).delete()
         db.session.commit()
 
-        # Tarea 1: Alta de Credenciales Especiales Múltiples
+        # Tarea 1: Alta de Credenciales Especiales Múltiples (Programada con fechas obligatorias)
         t1 = Tarea(
             bitacora_id=bitacora_hoy.id,
             operador_id=op_user.id,
             tipo_tarea="alta_credencial_especial",
             ticket="SEC-8921",
-            titulo="Habilitacion de credenciales biometricas para Datacenter Sala A",
+            titulo="Alta de Credenciales Especiales - BN-TK-4421",
             cliente="Banco Nacional",
             estado="completada",
             descripcion="Se procesaron las tarjetas de proximidad y biometricos para tecnicos de auditoria externa.",
-            es_actividad_programada=False,
+            es_actividad_programada=True,
+            fecha_programada_inicio=ahora - timedelta(hours=4),
+            fecha_programada_fin=ahora + timedelta(hours=2),
             campos_extra={
                 "ticket_cliente": "BN-TK-4421",
                 "credenciales_lista": [
@@ -295,6 +298,28 @@ def seed():
             descripcion="Operador: Job iniciado a las 08:30 con 6 canales paralelos, velocidad 420MB/s."
         )
         db.session.add_all([sub1, sub2])
+
+        # 5. Feedbacks de prueba
+        print("5. Verificando Feedbacks de ejemplo...")
+        Feedback.query.delete()
+        fb1 = Feedback(
+            usuario_id=op_user.id,
+            region_id=region_ar.id,
+            tipo="modificacion_tarea",
+            asunto="Agregar Jaula de Servidores en Salas de Buenos Aires",
+            mensaje="En el DOC Buenos Aires sumamos una nueva jaula privada en el piso 2 para clientes bancarios. Solicito agregarla a la lista de salas seleccionables.",
+            estado="resuelto",
+            respuesta_admin="Agregada exitosamente a la configuracion de la region."
+        )
+        fb2 = Feedback(
+            usuario_id=op_user.id,
+            region_id=region_ar.id,
+            tipo="sugerencia_mejora",
+            asunto="Aviso visual en tareas programadas proximas a iniciar",
+            mensaje="Seria util que las tareas programadas cambien de color cuando falten menos de 30 minutos para su inicio.",
+            estado="en_revision"
+        )
+        db.session.add_all([fb1, fb2])
 
         db.session.commit()
 

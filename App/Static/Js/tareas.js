@@ -64,42 +64,79 @@ function onTipoTareaChange() {
   const credBox = document.getElementById('credentials-module-box');
   const progCheckbox = document.getElementById('es_actividad_programada');
   const datesBox = document.getElementById('fechas-programadas-box');
+  const labelInicio = document.getElementById('label-fecha-inicio');
   const labelFin = document.getElementById('label-fecha-fin');
+  const inputInicio = document.getElementById('fecha_programada_inicio');
+  const inputFin = document.getElementById('fecha_programada_fin');
+  const groupTitulo = document.getElementById('form-group-titulo');
+  const inputTitulo = document.getElementById('titulo');
+
+  // Limpiar campos de fecha y contenedores al cambiar de tipo
+  if (!editingTaskId) {
+    inputInicio.value = '';
+    inputFin.value = '';
+  }
 
   if (!tipo) {
+    if (groupTitulo) groupTitulo.style.display = 'block';
+    if (inputTitulo) inputTitulo.required = true;
     if (credBox) credBox.style.display = 'none';
     if (container) container.style.display = 'none';
+    progCheckbox.checked = false;
+    progCheckbox.disabled = false;
+    datesBox.style.display = 'none';
+    inputInicio.required = false;
+    inputFin.required = false;
     return;
   }
 
-  // Comportamiento de Actividad Programada por Tipo
-  const esSiempreProgramada = ['acceso_equipos', 'retiro_equipos', 'acceso_tecnicos', 'mantenimiento'].includes(tipo);
+  // 1. Manejo del Título (Ocultar para credenciales especiales, mostrar para el resto)
+  if (tipo === 'alta_credencial_especial') {
+    if (groupTitulo) groupTitulo.style.display = 'none';
+    if (inputTitulo) {
+      inputTitulo.required = false;
+      inputTitulo.value = '';
+    }
+  } else {
+    if (groupTitulo) groupTitulo.style.display = 'block';
+    if (inputTitulo) inputTitulo.required = true;
+  }
+
+  // 2. Comportamiento de Actividad Programada por Tipo
+  // Credenciales especiales, equipos, técnicos y mantenimientos son programados obligatorios
+  const esSiempreProgramada = ['alta_credencial_especial', 'acceso_equipos', 'retiro_equipos', 'acceso_tecnicos', 'mantenimiento'].includes(tipo);
   
   if (esSiempreProgramada) {
     progCheckbox.checked = true;
     progCheckbox.disabled = true;
     datesBox.style.display = 'grid';
+    inputInicio.required = true;
+    labelInicio.innerHTML = 'Fecha / Hora Inicio <span style="color:var(--danger)">* (Obligatoria)</span>';
 
-    if (tipo === 'mantenimiento') {
+    if (tipo === 'alta_credencial_especial' || tipo === 'mantenimiento') {
       labelFin.innerHTML = 'Fecha / Hora Fin <span style="color:var(--danger)">* (Obligatoria)</span>';
-      document.getElementById('fecha_programada_fin').required = true;
+      inputFin.required = true;
     } else {
+      // Ingreso / Retiro de equipos y acceso de técnicos: Fin es opcional
       labelFin.innerHTML = 'Fecha / Hora Fin <span style="color:var(--text-muted); font-size:0.75rem;">(Opcional)</span>';
-      document.getElementById('fecha_programada_fin').required = false;
+      inputFin.required = false;
     }
   } else {
+    // Restores, Backups, Snapshots, Notas, etc: NO programadas por defecto y reseteadas
+    progCheckbox.checked = false;
     progCheckbox.disabled = false;
-    datesBox.style.display = progCheckbox.checked ? 'grid' : 'none';
+    datesBox.style.display = 'none';
+    inputInicio.required = false;
+    inputFin.required = false;
+    labelInicio.innerHTML = 'Fecha / Hora Inicio';
     labelFin.innerHTML = 'Fecha / Hora Fin';
-    document.getElementById('fecha_programada_fin').required = false;
   }
 
-  // MÓDULO DEDICADO: ALTA DE CREDENCIALES ESPECIALES MÚLTIPLES
+  // 3. MÓDULO DEDICADO: ALTA DE CREDENCIALES ESPECIALES MÚLTIPLES
   if (tipo === 'alta_credencial_especial') {
     credBox.style.display = 'block';
     if (container) container.style.display = 'none';
-    // Si no tiene filas, agregar una inicial
-    if (document.querySelectorAll('.credential-row').length === 0) {
+    if (!editingTaskId && document.querySelectorAll('.credential-row').length === 0) {
       agregarFilaCredencial();
     }
     return;
@@ -107,10 +144,9 @@ function onTipoTareaChange() {
     credBox.style.display = 'none';
   }
 
-  // OTROS CAMPOS DINÁMICOS (Salas de Datacenter, Sitios externos, etc.)
+  // 4. OTROS CAMPOS DINÁMICOS (Salas de Datacenter, Sitios externos, etc.)
   let campos = (regionConfig && regionConfig.campos_extra && regionConfig.campos_extra[tipo]) || [];
   
-  // Si es equipos/técnicos/mantenimiento, inyectar salas actualizadas de la región si es select
   if (['acceso_equipos', 'retiro_equipos', 'acceso_tecnicos', 'mantenimiento'].includes(tipo)) {
     const salas = regionConfig.salas_datacenter || [];
     campos = campos.map(c => {
@@ -452,9 +488,14 @@ async function guardarTarea(e) {
     }
   });
 
+  let tituloVal = document.getElementById('titulo').value.trim();
+  if (tipo_tarea === 'alta_credencial_especial' && !tituloVal) {
+    tituloVal = `Alta de Credenciales Especiales - ${campos_extra.ticket_cliente || document.getElementById('ticket').value.trim()}`;
+  }
+
   const payload = {
     ticket: document.getElementById('ticket').value.trim(),
-    titulo: document.getElementById('titulo').value.trim(),
+    titulo: tituloVal,
     cliente: document.getElementById('cliente').value.trim(),
     estado: document.getElementById('estado').value,
     descripcion: document.getElementById('descripcion').value.trim(),

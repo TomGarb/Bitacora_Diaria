@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Mi Perfil & Equipo - DOC{% endblock %}
+{% block page_title %}Mi Perfil y Equipo de Centro de Operaciones{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='Css/perfil.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- Tarjeta Principal de Usuario -->
+<div class="profile-card">
+  <div class="profile-avatar-large">
+    {{ user.nombre_completo[:2].upper() if user else 'OP' }}
+  </div>
+  <div style="flex: 1;">
+    <h3 style="font-size: 1.35rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.2rem;">
+      {{ user.nombre_completo }}
+    </h3>
+    <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; font-size: 0.875rem; color: var(--text-secondary);">
+      <div><i class="bi bi-person"></i> <strong>Usuario:</strong> {{ user.username }}</div>
+      <div><i class="bi bi-envelope"></i> <strong>Email:</strong> {{ user.email }}</div>
+      <div>
+        <span class="user-role-badge role-{{ user.rol }}">{{ user.rol }}</span>
+      </div>
+      <div>
+        <i class="bi bi-geo-alt"></i> <strong>Sede / Región:</strong> {{ region.nombre if region else 'Global' }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SECCIÓN: SUPERVISORES DE LA SEDE -->
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div class="card-header">
+    <div class="card-title">
+      <i class="bi bi-person-badge"></i> Supervisores Asignados (Sub-Admin)
+    </div>
+  </div>
+  <div class="card-body">
+    <div id="supervisores-grid" class="team-grid">
+      <div style="color: var(--text-muted); font-size: 0.85rem;">Cargando supervisores...</div>
+    </div>
+  </div>
+</div>
+
+<!-- SECCIÓN: COMPAÑEROS DE EQUIPO -->
+<div class="card">
+  <div class="card-header">
+    <div class="card-title">
+      <i class="bi bi-people"></i> Compañeros Operadores de la Sede
+    </div>
+  </div>
+  <div class="card-body">
+    <div id="companeros-grid" class="team-grid">
+      <div style="color: var(--text-muted); font-size: 0.85rem;">Cargando compañeros...</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='Js/perfil.js') }}"></script>
+{% endblock %}

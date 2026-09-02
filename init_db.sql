@@ -107,8 +107,24 @@ CREATE TABLE IF NOT EXISTS subtareas (
     updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Feedbacks y Reportes de Errores / Modificaciones
+CREATE TABLE IF NOT EXISTS feedbacks (
+    id SERIAL PRIMARY KEY,
+    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    region_id INTEGER REFERENCES regiones(id) ON DELETE SET NULL,
+    tipo VARCHAR(40) NOT NULL DEFAULT 'error_sistema', -- 'error_sistema', 'modificacion_tarea', 'sugerencia_mejora', 'otro'
+    asunto VARCHAR(150) NOT NULL,
+    mensaje TEXT NOT NULL,
+    estado VARCHAR(30) NOT NULL DEFAULT 'pendiente', -- 'pendiente', 'en_revision', 'resuelto', 'descartado'
+    respuesta_admin TEXT,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Índices de consulta rápida
 CREATE INDEX IF NOT EXISTS idx_tareas_bitacora ON tareas(bitacora_id);
 CREATE INDEX IF NOT EXISTS idx_tareas_operador ON tareas(operador_id);
 CREATE INDEX IF NOT EXISTS idx_subtareas_tarea ON subtareas(tarea_id);
 CREATE INDEX IF NOT EXISTS idx_bitacoras_region_fecha ON bitacoras(region_id, fecha);
+CREATE INDEX IF NOT EXISTS idx_feedbacks_usuario ON feedbacks(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_feedbacks_region ON feedbacks(region_id);

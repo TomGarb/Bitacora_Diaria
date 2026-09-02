@@ -51,6 +51,17 @@
         <span>Vista Previa Mail</span>
       </a>
 
+      <div class="nav-section-title">Comunidad & Soporte</div>
+      <a href="{{ url_for('perfil.index') }}" class="nav-item {% if request.endpoint == 'perfil.index' %}active{% endif %}">
+        <i class="bi bi-person-lines-fill"></i>
+        <span>Mi Perfil & Equipo</span>
+      </a>
+
+      <a href="{{ url_for('feedback.index') }}" class="nav-item {% if request.endpoint == 'feedback.index' %}active{% endif %}">
+        <i class="bi bi-chat-left-dots"></i>
+        <span>Feedback & Soporte</span>
+      </a>
+
       {% if current_user and (current_user.rol in ['admin', 'sub_admin']) %}
       <div class="nav-section-title">Supervisión DOC</div>
       <a href="{{ url_for('config_region.index') }}" class="nav-item {% if request.endpoint == 'config_region.index' %}active{% endif %}">

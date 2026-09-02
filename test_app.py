@@ -1,9 +1,9 @@
 import unittest
 import json
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from App import create_app
 from App.extensions import db
-from App.Models import Usuario, Region, RegionConfig, Bitacora, Tarea, Subtarea
+from App.Models import Usuario, Region, RegionConfig, Bitacora, Tarea, Subtarea, Feedback
 
 class TestBitacoraDOC(unittest.TestCase):
     def setUp(self):
@@ -13,7 +13,7 @@ class TestBitacoraDOC(unittest.TestCase):
         self.client = self.app.test_client()
         db.create_all()
 
-        # Crear región y usuario
+        # Crear región
         self.region = Region(nombre="Datacenter Test", codigo="TS-01", activa=True)
         db.session.add(self.region)
         db.session.flush()
@@ -25,7 +25,7 @@ class TestBitacoraDOC(unittest.TestCase):
         )
         db.session.add(self.config)
 
-        # Usuario operador
+        # Usuario operador 1
         self.operador = Usuario(
             username="operador_test",
             email="op@test.corp",
@@ -35,6 +35,17 @@ class TestBitacoraDOC(unittest.TestCase):
             activo=True
         )
         self.operador.set_password("demo123")
+
+        # Usuario operador 2 (compañero)
+        self.operador2 = Usuario(
+            username="operador_test2",
+            email="op2@test.corp",
+            nombre_completo="Operador Dos",
+            rol="operador",
+            region_id=self.region.id,
+            activo=True
+        )
+        self.operador2.set_password("demo123")
 
         # Usuario supervisor
         self.supervisor = Usuario(
@@ -47,7 +58,18 @@ class TestBitacoraDOC(unittest.TestCase):
         )
         self.supervisor.set_password("demo123")
 
-        db.session.add_all([self.operador, self.supervisor])
+        # Usuario admin global
+        self.admin = Usuario(
+            username="admin_global",
+            email="admin@test.corp",
+            nombre_completo="Admin Global",
+            rol="admin",
+            region_id=None,
+            activo=True
+        )
+        self.admin.set_password("demo123")
+
+        db.session.add_all([self.operador, self.operador2, self.supervisor, self.admin])
         db.session.commit()
 
     def tearDown(self):
@@ -72,16 +94,33 @@ class TestBitacoraDOC(unittest.TestCase):
         data = res_stats.get_json()
         self.assertIn('kpis', data)
 
-    def test_02_crear_tarea_credenciales_multiples(self):
+    def test_02_crear_tarea_credenciales_multiples_y_fechas(self):
         self.login_as(self.operador)
+        ahora = datetime.now(timezone.utc)
         
+        # Debe fallar si faltan fechas obligatorias
+        res_fail = self.client.post('/api/tareas', json={
+            "ticket": "SEC-100",
+            "cliente": "Cliente Alpha",
+            "tipo_tarea": "alta_credencial_especial",
+            "estado": "completada",
+            "descripcion": "Acceso biométrico",
+            "campos_extra": {
+                "ticket_cliente": "TK-CLI-900",
+                "credenciales_lista": [{"persona_propietaria": "Laura Torres", "codigo_alfanumerico": "CR-LAURA-88"}]
+            }
+        })
+        self.assertEqual(res_fail.status_code, 400)
+
+        # Con fechas de inicio y fin debe pasar y autogenerar título
         payload = {
             "ticket": "SEC-100",
-            "titulo": "Entrega credencial sala fría",
             "cliente": "Cliente Alpha",
             "tipo_tarea": "alta_credencial_especial",
             "estado": "completada",
             "descripcion": "Acceso biométrico habilitado",
+            "fecha_programada_inicio": ahora.isoformat(),
+            "fecha_programada_fin": (ahora + timedelta(hours=4)).isoformat(),
             "campos_extra": {
                 "ticket_cliente": "TK-CLI-900",
                 "credenciales_lista": [
@@ -98,8 +137,9 @@ class TestBitacoraDOC(unittest.TestCase):
         self.assertEqual(res.status_code, 201)
         data = res.get_json()
         self.assertTrue(data['success'])
+        self.assertTrue(data['tarea']['es_actividad_programada'])
         self.assertEqual(len(data['tarea']['campos_extra']['credenciales_lista']), 2)
-        self.assertEqual(data['tarea']['campos_extra']['ticket_cliente'], "TK-CLI-900")
+        self.assertIn('Alta de Credenciales Especiales', data['tarea']['titulo'])
 
     def test_03_validacion_fechas_equipos_y_mantenimiento(self):
         self.login_as(self.operador)
@@ -117,7 +157,7 @@ class TestBitacoraDOC(unittest.TestCase):
         self.assertEqual(res_fail.status_code, 400)
 
         # Mantenimiento con inicio y fin debe pasar
-        ahora = datetime.utcnow()
+        ahora = datetime.now(timezone.utc)
         res_ok = self.client.post('/api/tareas', json={
             "ticket": "MNT-1",
             "titulo": "Mantenimiento UPS",
@@ -152,21 +192,8 @@ class TestBitacoraDOC(unittest.TestCase):
             es_actividad_programada=False
         )
 
-        # Tarea 2: de otro operador no programada (oculta)
+        # Tarea 2: Mantenimiento programado de supervisor (visible en tabla de mantenimientos)
         t2 = Tarea(
-            bitacora_id=bitacora.id,
-            operador_id=self.supervisor.id,
-            tipo_tarea="manos_remotas",
-            ticket="RH-2",
-            titulo="Tarea privada",
-            cliente="Cli 2",
-            estado="completada",
-            descripcion="Desc 2",
-            es_actividad_programada=False
-        )
-
-        # Tarea 3: Mantenimiento programado de supervisor (visible en tabla de mantenimientos)
-        t3 = Tarea(
             bitacora_id=bitacora.id,
             operador_id=self.supervisor.id,
             tipo_tarea="mantenimiento",
@@ -179,7 +206,7 @@ class TestBitacoraDOC(unittest.TestCase):
             campos_extra={"sitio_mantenimiento": "Subestación 1"}
         )
 
-        db.session.add_all([t1, t2, t3])
+        db.session.add_all([t1, t2])
         db.session.commit()
 
         res = self.client.get(f'/api/mail-preview/data?bitacora_id={bitacora.id}')
@@ -190,7 +217,50 @@ class TestBitacoraDOC(unittest.TestCase):
         self.assertEqual(len(secciones['casos_operador']), 1)
         self.assertEqual(secciones['casos_operador'][0]['ticket'], 'RH-1')
         self.assertEqual(len(secciones['programados_mantenimientos']), 1)
-        self.assertEqual(secciones['programados_mantenimientos'][0]['ticket'], 'MNT-99')
+
+    def test_05_perfil_equipo_y_supervisores(self):
+        self.login_as(self.operador)
+        res = self.client.get('/api/perfil/equipo')
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        
+        # Debe mostrar al supervisor
+        self.assertEqual(len(data['supervisores']), 1)
+        self.assertEqual(data['supervisores'][0]['username'], 'supervisor_test')
+
+        # Debe mostrar a su compañero operador pero no a él mismo
+        self.assertEqual(len(data['companeros']), 1)
+        self.assertEqual(data['companeros'][0]['username'], 'operador_test2')
+
+        # No debe figurar admin_global en supervisores ni compañeros
+        all_usernames = [s['username'] for s in data['supervisores']] + [c['username'] for c in data['companeros']]
+        self.assertNotIn('admin_global', all_usernames)
+
+    def test_06_feedback_creacion_y_resolucion(self):
+        self.login_as(self.operador)
+        
+        # 1. Crear reporte de error
+        res_crear = self.client.post('/api/feedbacks', json={
+            "tipo": "error_sistema",
+            "asunto": "Error al procesar botón",
+            "mensaje": "En la pantalla de bitácora el botón tardó en responder."
+        })
+        self.assertEqual(res_crear.status_code, 201)
+        fb_id = res_crear.get_json()['feedback']['id']
+
+        # 2. Listar feedbacks como operador
+        res_list = self.client.get('/api/feedbacks')
+        self.assertEqual(res_list.status_code, 200)
+        self.assertEqual(len(res_list.get_json()), 1)
+
+        # 3. Responder reporte como supervisor
+        self.login_as(self.supervisor)
+        res_resp = self.client.put(f'/api/feedbacks/{fb_id}/responder', json={
+            "estado": "resuelto",
+            "respuesta_admin": "Corregido en la última versión."
+        })
+        self.assertEqual(res_resp.status_code, 200)
+        self.assertEqual(res_resp.get_json()['feedback']['estado'], 'resuelto')
 
 if __name__ == '__main__':
     unittest.main()

@@ -4,6 +4,7 @@ from App.Models.region_config import RegionConfig, TIPOS_TAREA_DEFAULT, CAMPOS_E
 from App.Models.bitacora import Bitacora
 from App.Models.tarea import Tarea, ESTADOS_TAREA
 from App.Models.subtarea import Subtarea
+from App.Models.feedback import Feedback, TIPOS_FEEDBACK, ESTADOS_FEEDBACK
 
 __all__ = [
     'Usuario',
@@ -15,5 +16,8 @@ __all__ = [
     'Bitacora',
     'Tarea',
     'ESTADOS_TAREA',
-    'Subtarea'
+    'Subtarea',
+    'Feedback',
+    'TIPOS_FEEDBACK',
+    'ESTADOS_FEEDBACK'
 ]
