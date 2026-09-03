@@ -10,6 +10,7 @@ from App.Models.bitacora import Bitacora
 from App.Models.tarea import Tarea
 from App.Models.subtarea import Subtarea
 from App.Models.feedback import Feedback
+from App.Models.equipo import Equipo, usuario_equipos
 
 def seed():
     app = create_app()
@@ -319,7 +320,47 @@ def seed():
             mensaje="Seria util que las tareas programadas cambien de color cuando falten menos de 30 minutos para su inicio.",
             estado="en_revision"
         )
-        db.session.add_all([fb1, fb2])
+        # 6. Equipos / Grupos de Trabajo de ejemplo
+        print("6. Verificando Equipos de Trabajo por sede...")
+        db.session.execute(usuario_equipos.delete())
+        Equipo.query.delete()
+        db.session.commit()
+
+        eq_ar1 = Equipo(
+            nombre="Equipo Manos Inteligentes",
+            descripcion="Soporte avanzado de hardware, ruteo y diagnóstico en racks",
+            region_id=region_ar.id,
+            activo=True
+        )
+        eq_ar2 = Equipo(
+            nombre="Equipo Backups",
+            descripcion="Operaciones de respaldo, restore, cintas y snapshots",
+            region_id=region_ar.id,
+            activo=True
+        )
+
+        op_scl = usuarios_creados["op_santiago"]
+        eq_cl1 = Equipo(
+            nombre="Equipo Virtualización",
+            descripcion="Gestión de hipervisores VMware ESXi, Nutanix y Cloud Stack",
+            region_id=region_cl.id,
+            activo=True
+        )
+        eq_cl2 = Equipo(
+            nombre="Equipo Manos Remotas",
+            descripcion="Soporte físico directo en planta, cableado estructurado y accesos",
+            region_id=region_cl.id,
+            activo=True
+        )
+
+        db.session.add_all([eq_ar1, eq_ar2, eq_cl1, eq_cl2])
+        db.session.flush()
+
+        eq_ar1.miembros.append(op_user)
+        eq_ar1.miembros.append(sup_user)
+        eq_ar2.miembros.append(op_user)
+        eq_cl1.miembros.append(op_scl)
+        eq_cl2.miembros.append(op_scl)
 
         db.session.commit()
 

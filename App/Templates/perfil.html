@@ -17,7 +17,7 @@
     <h3 style="font-size: 1.35rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.2rem;">
       {{ user.nombre_completo }}
     </h3>
-    <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; font-size: 0.875rem; color: var(--text-secondary);">
+    <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.6rem;">
       <div><i class="bi bi-person"></i> <strong>Usuario:</strong> {{ user.username }}</div>
       <div><i class="bi bi-envelope"></i> <strong>Email:</strong> {{ user.email }}</div>
       <div>
@@ -26,6 +26,28 @@
       <div>
         <i class="bi bi-geo-alt"></i> <strong>Sede / Región:</strong> {{ region.nombre if region else 'Global' }}
       </div>
+    </div>
+
+    <!-- Grupos/Equipos del Usuario -->
+    <div id="mis-equipos-container" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+      <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;"><i class="bi bi-people-fill"></i> Grupos Asignados:</span>
+      <span id="mis-equipos-badges" style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+        <span class="badge" style="background: rgba(148, 163, 184, 0.15); color: var(--text-muted);">Cargando grupos...</span>
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- SECCIÓN: MIS EQUIPOS / GRUPOS DE TRABAJO -->
+<div class="card" style="margin-bottom: 1.5rem;">
+  <div class="card-header">
+    <div class="card-title">
+      <i class="bi bi-diagram-3-fill"></i> Mis Grupos de Trabajo en {{ region.nombre if region else 'Datacenter' }}
+    </div>
+  </div>
+  <div class="card-body">
+    <div id="equipos-cards-grid" class="team-grid">
+      <div style="color: var(--text-muted); font-size: 0.85rem;">Cargando grupos de trabajo...</div>
     </div>
   </div>
 </div>

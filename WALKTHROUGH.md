@@ -153,6 +153,17 @@ Módulo exclusivo para proyectar en monitores y Smart TVs de los centros de oper
 - **Administrador Global (`admin`):**
   - Visibilidad y control total sobre todas las sedes, gestión de regiones y asignación de permisos globales.
 
+### L. Equipos / Grupos de Trabajo por Sede y Métricas Segmentadas
+- **Administración Regional de Equipos:**
+  - Los supervisores (`sub_admin`) pueden crear, editar y eliminar equipos de operaciones específicos de su sede (ej: *Equipo Virtualización* y *Equipo Manos Remotas* para Santiago; *Equipo Manos Inteligentes* y *Equipo Backups* para Buenos Aires).
+  - Los administradores globales pueden crear y gestionar equipos en cualquiera de las regiones.
+  - Se permite la **asignación multiequipo** de operadores (un operador puede pertenecer a 1 o varios equipos de su sede).
+- **Visibilidad en Perfil del Operador ([`/perfil`](file:///c:/Users/Tomas/Desktop/Code/Bitacora%20Centro%20Operaciones/App/Templates/perfil.html)):**
+  - Cada operador visualiza insignias y tarjetas interactivas indicando todos los grupos de trabajo a los que pertenece.
+- **Métricas Segmentadas en Dashboard Principal ([`/dashboard`](file:///c:/Users/Tomas/Desktop/Code/Bitacora%20Centro%20Operaciones/App/Templates/dashboard.html)):**
+  - Barra de pestañas dinámicas en la parte superior: `[ Consolidado Sede ]`, `[ Equipo A ]`, `[ Equipo B ]`, etc.
+  - Al cambiar de pestaña, los KPIs (*Total de Tareas, Completadas, En Progreso, Eficiencia %*), las barras de distribución por tipo de actividad y la tabla de tareas recientes se recalculan en tiempo real según los miembros del equipo seleccionado.
+
 ---
 
 ## 3. Cuentas de Acceso Preconfiguradas

@@ -37,7 +37,7 @@ def obtener_equipo():
         activo=True
     ).order_by(Usuario.nombre_completo.asc()).all()
 
-    # 2. Compañeros operadores de la misma sede (rol == 'operador', excluyendo al propio usuario si se desea o marcándolo)
+    # 2. Compañeros operadores de la misma sede (rol == 'operador', excluyendo al propio usuario)
     companeros = Usuario.query.filter(
         Usuario.region_id == region_id,
         Usuario.rol == 'operador',
@@ -45,9 +45,17 @@ def obtener_equipo():
         Usuario.id != user.id
     ).order_by(Usuario.nombre_completo.asc()).all()
 
+    # 3. Equipos / Grupos de trabajo a los que pertenece el usuario actual
+    mis_equipos = [{
+        'id': eq.id,
+        'nombre': eq.nombre,
+        'descripcion': eq.descripcion
+    } for eq in user.equipos.filter_by(activo=True)]
+
     return jsonify({
         'usuario': user.to_dict(),
         'region': region.to_dict() if region else None,
+        'mis_equipos': mis_equipos,
         'supervisores': [s.to_dict() for s in supervisores],
         'companeros': [c.to_dict() for c in companeros]
     })

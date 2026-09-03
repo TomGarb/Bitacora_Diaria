@@ -53,6 +53,23 @@
   </div>
 </div>
 
+<!-- Barra de Pestañas Dinámicas por Equipos de Trabajo -->
+<div class="team-tabs-container">
+  <div class="team-tabs-label">
+    <i class="bi bi-diagram-3-fill"></i> Segmentación por Equipo:
+  </div>
+  <div class="team-tabs-scroll" id="team-tabs-bar">
+    <button class="team-tab-btn active" data-equipo-id="">
+      <i class="bi bi-buildings"></i> Consolidado Sede
+    </button>
+    {% for eq in equipos %}
+      <button class="team-tab-btn" data-equipo-id="{{ eq.id }}">
+        <i class="bi bi-people-fill"></i> {{ eq.nombre }}
+      </button>
+    {% endfor %}
+  </div>
+</div>
+
 <!-- Grid de KPIs -->
 <div class="kpi-grid">
   <div class="kpi-card">

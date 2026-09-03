@@ -3,7 +3,7 @@ import json
 from datetime import datetime, date, timedelta, timezone
 from App import create_app
 from App.extensions import db
-from App.Models import Usuario, Region, RegionConfig, Bitacora, Tarea, Subtarea, Feedback
+from App.Models import Usuario, Region, RegionConfig, Bitacora, Tarea, Subtarea, Feedback, Equipo
 
 class TestBitacoraDOC(unittest.TestCase):
     def setUp(self):
@@ -450,6 +450,66 @@ class TestBitacoraDOC(unittest.TestCase):
         # 5. Eliminar usuario de su región
         r_del = self.client.delete(f'/api/admin/usuarios/{new_u_id}')
         self.assertEqual(r_del.status_code, 200)
+
+    def test_09_equipos_crud_y_metricas_segmentadas(self):
+        # 1. Login como sub_admin de region 1 (Buenos Aires)
+        self.login_as(self.supervisor)
+
+        # 2. Crear un equipo en su región
+        r_create = self.client.post('/api/equipos', json={
+            "nombre": "Equipo Manos Inteligentes Test",
+            "descripcion": "Equipo especializado en racks y ruteo",
+            "miembros_ids": [self.operador.id]
+        })
+        self.assertEqual(r_create.status_code, 201)
+        eq_id = r_create.get_json()['equipo']['id']
+        self.assertEqual(r_create.get_json()['equipo']['total_miembros'], 1)
+
+        # 3. Listar equipos como operador (debe ver el equipo creado en su región)
+        self.login_as(self.operador)
+        r_list = self.client.get('/api/equipos')
+        self.assertEqual(r_list.status_code, 200)
+        equipos = r_list.get_json()
+        nombres = [e['nombre'] for e in equipos]
+        self.assertIn("Equipo Manos Inteligentes Test", nombres)
+
+        # 4. Verificar que en el perfil del operador figura en mis_equipos
+        r_perfil = self.client.get('/api/perfil/equipo')
+        self.assertEqual(r_perfil.status_code, 200)
+        mis_eqs = r_perfil.get_json()['mis_equipos']
+        self.assertEqual(len(mis_eqs), 1)
+        self.assertEqual(mis_eqs[0]['nombre'], "Equipo Manos Inteligentes Test")
+
+        # 5. Modificar equipo (agregar al supervisor también al equipo)
+        self.login_as(self.supervisor)
+        r_edit = self.client.put(f'/api/equipos/{eq_id}', json={
+            "nombre": "Equipo Manos Inteligentes y Redes",
+            "miembros_ids": [self.operador.id, self.supervisor.id]
+        })
+        self.assertEqual(r_edit.status_code, 200)
+        self.assertEqual(r_edit.get_json()['equipo']['total_miembros'], 2)
+
+        # 6. Probar aislamiento regional: Crear region 2 y verificar que supervisor 1 no pueda editar equipos de region 2
+        r2 = Region(nombre="Santiago", codigo="CL-SCL-TEST", activa=True)
+        db.session.add(r2)
+        db.session.flush()
+
+        eq_r2 = Equipo(nombre="Equipo Chile", region_id=r2.id, activo=True)
+        db.session.add(eq_r2)
+        db.session.commit()
+
+        r_hack = self.client.put(f'/api/equipos/{eq_r2.id}', json={
+            "nombre": "Intento Modificar Chile"
+        })
+        self.assertEqual(r_hack.status_code, 403)
+
+        # 7. Métricas del Dashboard segmentadas por equipo_id
+        r_stats = self.client.get(f'/api/dashboard/stats?equipo_id={eq_id}')
+        self.assertEqual(r_stats.status_code, 200)
+        stats_data = r_stats.get_json()
+        self.assertIn('kpis', stats_data)
+        self.assertEqual(stats_data['equipo_id_activo'], eq_id)
+        self.assertEqual(stats_data['equipo_seleccionado']['nombre'], "Equipo Manos Inteligentes y Redes")
 
 if __name__ == '__main__':
     unittest.main()

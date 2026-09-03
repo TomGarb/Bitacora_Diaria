@@ -121,6 +121,27 @@ CREATE TABLE IF NOT EXISTS feedbacks (
     updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- ==========================================
+-- 8. TABLA: EQUIPOS / GRUPOS DE TRABAJO
+-- ==========================================
+CREATE TABLE IF NOT EXISTS equipos (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    descripcion TEXT,
+    region_id INTEGER NOT NULL REFERENCES regiones(id) ON DELETE CASCADE,
+    activo BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ==========================================
+-- 9. TABLA: ASOCIACIÓN USUARIOS - EQUIPOS
+-- ==========================================
+CREATE TABLE IF NOT EXISTS usuario_equipos (
+    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    equipo_id INTEGER NOT NULL REFERENCES equipos(id) ON DELETE CASCADE,
+    PRIMARY KEY (usuario_id, equipo_id)
+);
+
 -- Índices de consulta rápida
 CREATE INDEX IF NOT EXISTS idx_tareas_bitacora ON tareas(bitacora_id);
 CREATE INDEX IF NOT EXISTS idx_tareas_operador ON tareas(operador_id);
@@ -128,3 +149,6 @@ CREATE INDEX IF NOT EXISTS idx_subtareas_tarea ON subtareas(tarea_id);
 CREATE INDEX IF NOT EXISTS idx_bitacoras_region_fecha ON bitacoras(region_id, fecha);
 CREATE INDEX IF NOT EXISTS idx_feedbacks_usuario ON feedbacks(usuario_id);
 CREATE INDEX IF NOT EXISTS idx_feedbacks_region ON feedbacks(region_id);
+CREATE INDEX IF NOT EXISTS idx_equipos_region ON equipos(region_id);
+CREATE INDEX IF NOT EXISTS idx_usuario_equipos_user ON usuario_equipos(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_usuario_equipos_equipo ON usuario_equipos(equipo_id);

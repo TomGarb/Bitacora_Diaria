@@ -5,6 +5,7 @@ from App.Models.bitacora import Bitacora
 from App.Models.tarea import Tarea, ESTADOS_TAREA
 from App.Models.subtarea import Subtarea
 from App.Models.feedback import Feedback, TIPOS_FEEDBACK, ESTADOS_FEEDBACK
+from App.Models.equipo import Equipo, usuario_equipos
 
 __all__ = [
     'Usuario',
@@ -19,5 +20,7 @@ __all__ = [
     'Subtarea',
     'Feedback',
     'TIPOS_FEEDBACK',
-    'ESTADOS_FEEDBACK'
+    'ESTADOS_FEEDBACK',
+    'Equipo',
+    'usuario_equipos'
 ]

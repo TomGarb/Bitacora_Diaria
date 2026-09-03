@@ -1,8 +1,11 @@
 /**
- * Dashboard JS - Métricas y resúmenes en vivo
+ * Dashboard JS - Métricas, segmentación por equipos y resúmenes en vivo
  */
 
+let equipoSeleccionadoId = null;
+
 document.addEventListener('DOMContentLoaded', () => {
+  setupTeamTabs();
   cargarEstadisticas();
 
   const refreshBtn = document.getElementById('btn-refresh-dashboard');
@@ -16,10 +19,65 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+function setupTeamTabs() {
+  document.querySelectorAll('.team-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.team-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      equipoSeleccionadoId = btn.dataset.equipoId ? parseInt(btn.dataset.equipoId) : null;
+      cargarEstadisticas();
+    });
+  });
+}
+
+function renderTeamTabs(equipos, activoId) {
+  const container = document.getElementById('team-tabs-bar');
+  if (!container || !equipos) return;
+
+  container.innerHTML = '';
+
+  // Tab consolidado
+  const btnConsolidado = document.createElement('button');
+  btnConsolidado.className = `team-tab-btn ${!activoId ? 'active' : ''}`;
+  btnConsolidado.dataset.equipoId = '';
+  btnConsolidado.innerHTML = '<i class="bi bi-buildings"></i> Consolidado Sede';
+  btnConsolidado.addEventListener('click', () => {
+    document.querySelectorAll('.team-tab-btn').forEach(b => b.classList.remove('active'));
+    btnConsolidado.classList.add('active');
+    equipoSeleccionadoId = null;
+    cargarEstadisticas();
+  });
+  container.appendChild(btnConsolidado);
+
+  // Tabs de equipos dinámicos
+  equipos.forEach(eq => {
+    const btn = document.createElement('button');
+    btn.className = `team-tab-btn ${activoId === eq.id ? 'active' : ''}`;
+    btn.dataset.equipoId = eq.id;
+    btn.innerHTML = `<i class="bi bi-people-fill"></i> ${eq.nombre}`;
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.team-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      equipoSeleccionadoId = eq.id;
+      cargarEstadisticas();
+    });
+    container.appendChild(btn);
+  });
+}
+
 async function cargarEstadisticas() {
   try {
-    const data = await fetchAPI('/api/dashboard/stats');
+    const url = equipoSeleccionadoId 
+      ? `/api/dashboard/stats?equipo_id=${equipoSeleccionadoId}`
+      : '/api/dashboard/stats';
+
+    const data = await fetchAPI(url);
     if (!data) return;
+
+    // Actualizar tabs si se recibieron de la API
+    if (data.equipos_disponibles) {
+      renderTeamTabs(data.equipos_disponibles, data.equipo_id_activo);
+    }
 
     // Actualizar KPIs
     document.getElementById('kpi-total').textContent = data.kpis.total_tareas;
@@ -37,7 +95,7 @@ async function cargarEstadisticas() {
       const tipos = Object.entries(data.distribucion_tipos);
 
       if (tipos.length === 0) {
-        container.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem;">No hay tareas registradas en esta bitácora.</p>';
+        container.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem;">No hay tareas registradas para este filtro (${data.equipo_seleccionado ? data.equipo_seleccionado.nombre : 'Sede General'}).</p>`;
       } else {
         tipos.sort((a, b) => b[1] - a[1]).forEach(([tipo, count]) => {
           const pct = Math.round((count / total) * 100);
@@ -64,7 +122,7 @@ async function cargarEstadisticas() {
     if (tbody && data.ultimas_tareas) {
       tbody.innerHTML = '';
       if (data.ultimas_tareas.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">No hay tareas recientes cargadas</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">No hay tareas recientes cargadas para este equipo</td></tr>';
       } else {
         data.ultimas_tareas.forEach(tarea => {
           const tr = document.createElement('tr');

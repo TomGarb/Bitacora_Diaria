@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
-{% block title %}Gestión de Usuarios y Permisos - DOC{% endblock %}
-{% block page_title %}{% if es_admin_global %}Administración Global (DOC){% else %}Gestión de Usuarios — Sede Regional{% endif %}{% endblock %}
+{% block title %}Gestión de Usuarios y Equipos - DOC{% endblock %}
+{% block page_title %}{% if es_admin_global %}Administración Global (DOC){% else %}Gestión de Usuarios y Equipos — Sede Regional{% endif %}{% endblock %}
 
 {% block styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='Css/admin.css') }}">
@@ -9,6 +9,9 @@
 
 {% block navbar_actions %}
 <div style="display: flex; gap: 0.5rem;">
+  <button class="btn btn-secondary btn-sm" onclick="abrirModalNuevoEquipo()">
+    <i class="bi bi-diagram-3"></i> Nuevo Equipo
+  </button>
   {% if es_admin_global %}
   <button class="btn btn-secondary btn-sm" onclick="abrirModalNuevaRegion()">
     <i class="bi bi-globe-plus"></i> Nueva Región
@@ -30,6 +33,9 @@
   <button class="admin-tab-btn active" data-tab="tab-usuarios">
     <i class="bi bi-people"></i> Usuarios y Permisos
   </button>
+  <button class="admin-tab-btn" data-tab="tab-equipos">
+    <i class="bi bi-diagram-3-fill"></i> Equipos / Grupos de Trabajo
+  </button>
   {% if es_admin_global %}
   <button class="admin-tab-btn" data-tab="tab-regiones">
     <i class="bi bi-geo-alt"></i> Centros de Operaciones / Regiones
@@ -37,7 +43,7 @@
   {% endif %}
 </div>
 
-<!-- TAB: USUARIOS -->
+<!-- TAB 1: USUARIOS -->
 <div id="tab-usuarios" class="admin-tab-content active">
   <div class="card">
     <div class="card-header">
@@ -69,8 +75,40 @@
   </div>
 </div>
 
+<!-- TAB 2: EQUIPOS / GRUPOS DE TRABAJO -->
+<div id="tab-equipos" class="admin-tab-content">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <i class="bi bi-diagram-3"></i> Equipos de Operaciones en {% if es_admin_global %}Todas las Sedes{% else %}su Datacenter{% endif %}
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="abrirModalNuevoEquipo()">
+        <i class="bi bi-plus-lg"></i> Crear Equipo
+      </button>
+    </div>
+    <div class="table-responsive">
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre del Equipo</th>
+            <th>Región / Sede</th>
+            <th>Descripción</th>
+            <th>Operadores Miembros</th>
+            <th>Miembros</th>
+            <th style="text-align:right;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="equipos-tbody">
+          <tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Cargando equipos...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 {% if es_admin_global %}
-<!-- TAB: REGIONES -->
+<!-- TAB 3: REGIONES -->
 <div id="tab-regiones" class="admin-tab-content">
   <div class="card">
     <div class="card-header">
@@ -237,6 +275,55 @@
         </button>
         <button type="button" class="btn btn-secondary" onclick="closeModal('modal-editar-usuario')">Cancelar</button>
         <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Crear / Editar Equipo -->
+<div id="modal-equipo" class="modal-overlay">
+  <div class="modal-container" style="max-width: 580px;">
+    <div class="modal-header">
+      <h3 class="modal-title" id="modal-equipo-titulo"><i class="bi bi-diagram-3-fill"></i> Crear Grupo / Equipo de Trabajo</h3>
+      <button class="modal-close">&times;</button>
+    </div>
+    <form id="form-equipo">
+      <input type="hidden" id="equipo-id">
+      <div class="modal-body">
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Nombre del Equipo <span style="color:var(--danger)">*</span></label>
+            <input type="text" id="equipo-nombre" class="form-control" placeholder="Ej: Equipo Virtualización, Equipo Manos Remotas" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Región / Datacenter</label>
+            <select id="equipo-region" class="form-select" {% if not es_admin_global %}disabled{% endif %}>
+              {% for r in regiones %}
+                <option value="{{ r.id }}" {% if user.region_id == r.id %}selected{% endif %}>{{ r.nombre }} ({{ r.codigo }})</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Descripción del Grupo</label>
+          <textarea id="equipo-desc" class="form-control" rows="2" placeholder="Especialidades o actividades principales del equipo..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" style="display:flex; justify-content:space-between;">
+            <span><i class="bi bi-people-fill"></i> Asignar Operadores del Datacenter</span>
+            <small style="color:var(--text-muted);">Puede seleccionar múltiples operadores</small>
+          </label>
+          <div id="equipo-operadores-list" style="max-height: 180px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; padding: 0.75rem; background: var(--bg-tertiary); display: flex; flex-direction: column; gap: 0.5rem;">
+            <!-- Renderizado dinámico de checkboxes de operadores -->
+            <div style="color:var(--text-muted); font-size:0.85rem;">Cargando operadores...</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-equipo')">Cancelar</button>
+        <button type="submit" class="btn btn-primary" id="btn-guardar-equipo">Guardar Equipo</button>
       </div>
     </form>
   </div>
