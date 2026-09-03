@@ -78,16 +78,24 @@
         <span>TV 3: Agenda Planificada</span>
       </a>
 
-      {% if current_user and (current_user.rol in ['admin', 'sub_admin']) %}
+      {% if current_user and current_user.rol == 'sub_admin' %}
       <div class="nav-section-title">Supervisión DOC</div>
       <a href="{{ url_for('config_region.index') }}" class="nav-item {% if request.endpoint == 'config_region.index' %}active{% endif %}">
         <i class="bi bi-sliders"></i>
         <span>Configurar Región</span>
       </a>
+      <a href="{{ url_for('admin.index') }}" class="nav-item {% if request.endpoint == 'admin.index' %}active{% endif %}">
+        <i class="bi bi-person-gear"></i>
+        <span>Gestión de Usuarios</span>
+      </a>
       {% endif %}
 
       {% if current_user and current_user.rol == 'admin' %}
       <div class="nav-section-title">Administración Global</div>
+      <a href="{{ url_for('config_region.index') }}" class="nav-item {% if request.endpoint == 'config_region.index' %}active{% endif %}">
+        <i class="bi bi-sliders"></i>
+        <span>Configurar Región</span>
+      </a>
       <a href="{{ url_for('admin.index') }}" class="nav-item {% if request.endpoint == 'admin.index' %}active{% endif %}">
         <i class="bi bi-shield-lock"></i>
         <span>Admin Usuarios / Regiones</span>

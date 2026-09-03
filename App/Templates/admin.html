@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
-{% block title %}Administración del Sistema - DOC{% endblock %}
-{% block page_title %}Administración Global (DOC){% endblock %}
+{% block title %}Gestión de Usuarios y Permisos - DOC{% endblock %}
+{% block page_title %}{% if es_admin_global %}Administración Global (DOC){% else %}Gestión de Usuarios — Sede Regional{% endif %}{% endblock %}
 
 {% block styles %}
 <link rel="stylesheet" href="{{ url_for('static', filename='Css/admin.css') }}">
@@ -9,9 +9,11 @@
 
 {% block navbar_actions %}
 <div style="display: flex; gap: 0.5rem;">
+  {% if es_admin_global %}
   <button class="btn btn-secondary btn-sm" onclick="abrirModalNuevaRegion()">
     <i class="bi bi-globe-plus"></i> Nueva Región
   </button>
+  {% endif %}
   <button class="btn btn-primary btn-sm" onclick="abrirModalNuevoUsuario()">
     <i class="bi bi-person-plus"></i> Nuevo Usuario
   </button>
@@ -19,14 +21,20 @@
 {% endblock %}
 
 {% block content %}
+<input type="hidden" id="es-admin-global" value="{{ '1' if es_admin_global else '0' }}">
+<input type="hidden" id="current-user-region-id" value="{{ user.region_id or '' }}">
+<input type="hidden" id="current-user-id" value="{{ user.id }}">
+
 <!-- Tabs de navegación Admin -->
 <div class="admin-tabs">
   <button class="admin-tab-btn active" data-tab="tab-usuarios">
-    <i class="bi bi-people"></i> Usuarios y Operadores
+    <i class="bi bi-people"></i> Usuarios y Permisos
   </button>
+  {% if es_admin_global %}
   <button class="admin-tab-btn" data-tab="tab-regiones">
     <i class="bi bi-geo-alt"></i> Centros de Operaciones / Regiones
   </button>
+  {% endif %}
 </div>
 
 <!-- TAB: USUARIOS -->
@@ -34,7 +42,7 @@
   <div class="card">
     <div class="card-header">
       <div class="card-title">
-        <i class="bi bi-person-badge"></i> Cuentas de Usuarios Registradas
+        <i class="bi bi-person-badge"></i> {% if es_admin_global %}Todas las Cuentas de Usuarios Registradas{% else %}Operadores y Supervisores de su Región{% endif %}
       </div>
       <button class="btn btn-primary btn-sm" onclick="abrirModalNuevoUsuario()">
         <i class="bi bi-plus-lg"></i> Agregar Usuario
@@ -50,16 +58,18 @@
             <th>Rol</th>
             <th>Región Asignada</th>
             <th>Estado</th>
+            <th style="text-align:right;">Acciones</th>
           </tr>
         </thead>
         <tbody id="usuarios-tbody">
-          <tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Cargando usuarios...</td></tr>
+          <tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Cargando usuarios...</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 </div>
 
+{% if es_admin_global %}
 <!-- TAB: REGIONES -->
 <div id="tab-regiones" class="admin-tab-content">
   <div class="card">
@@ -90,6 +100,7 @@
     </div>
   </div>
 </div>
+{% endif %}
 
 <!-- MODAL: Nuevo Usuario -->
 <div id="modal-nuevo-usuario" class="modal-overlay">
@@ -122,16 +133,20 @@
             <select id="user-rol" class="form-select" required>
               <option value="operador">Operador (Carga de tareas)</option>
               <option value="sub_admin">Supervisor DOC (sub-admin - Configura Front y Cierra turnos)</option>
+              {% if es_admin_global %}
               <option value="admin">Administrador Global (Admin)</option>
+              {% endif %}
             </select>
           </div>
 
           <div class="form-group">
             <label class="form-label">Región / Datacenter</label>
-            <select id="user-region" class="form-select">
+            <select id="user-region" class="form-select" {% if not es_admin_global %}disabled{% endif %}>
+              {% if es_admin_global %}
               <option value="">Global / Sin región fija</option>
+              {% endif %}
               {% for r in regiones %}
-                <option value="{{ r.id }}">{{ r.nombre }} ({{ r.codigo }})</option>
+                <option value="{{ r.id }}" {% if user.region_id == r.id %}selected{% endif %}>{{ r.nombre }} ({{ r.codigo }})</option>
               {% endfor %}
             </select>
           </div>
@@ -150,6 +165,84 @@
   </div>
 </div>
 
+<!-- MODAL: Editar Usuario & Permisos -->
+<div id="modal-editar-usuario" class="modal-overlay">
+  <div class="modal-container" style="max-width: 550px;">
+    <div class="modal-header">
+      <h3 class="modal-title"><i class="bi bi-pencil-square"></i> Modificar Perfil y Permisos</h3>
+      <button class="modal-close">&times;</button>
+    </div>
+    <form id="form-editar-usuario">
+      <input type="hidden" id="edit-user-id">
+      <div class="modal-body">
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Username</label>
+            <input type="text" id="edit-user-username" class="form-control" disabled style="opacity: 0.7;">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Corporativo <span style="color:var(--danger)">*</span></label>
+            <input type="email" id="edit-user-email" class="form-control" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Nombre Completo <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="edit-user-nombre" class="form-control" required>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Rol y Permisos <span style="color:var(--danger)">*</span></label>
+            <select id="edit-user-rol" class="form-select" required>
+              <option value="operador">Operador (Carga de tareas)</option>
+              <option value="sub_admin">Supervisor DOC (sub-admin)</option>
+              {% if es_admin_global %}
+              <option value="admin">Administrador Global (Admin)</option>
+              {% endif %}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Región Asignada</label>
+            <select id="edit-user-region" class="form-select" {% if not es_admin_global %}disabled{% endif %}>
+              {% if es_admin_global %}
+              <option value="">Global / Sin región</option>
+              {% endif %}
+              {% for r in regiones %}
+                <option value="{{ r.id }}">{{ r.nombre }} ({{ r.codigo }})</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Estado de la Cuenta</label>
+            <select id="edit-user-activo" class="form-select">
+              <option value="1">Activo / Habilitado</option>
+              <option value="0">Inactivo / Bloqueado</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Resetear Contraseña</label>
+            <input type="password" id="edit-user-password" class="form-control" placeholder="Dejar vacío para no cambiar">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger btn-sm" id="btn-eliminar-usuario" style="margin-right: auto;" onclick="confirmarEliminarUsuario()">
+          <i class="bi bi-trash"></i> Eliminar
+        </button>
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-editar-usuario')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if es_admin_global %}
 <!-- MODAL: Nueva Región -->
 <div id="modal-nueva-region" class="modal-overlay">
   <div class="modal-container" style="max-width: 500px;">
@@ -182,6 +275,7 @@
     </form>
   </div>
 </div>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}

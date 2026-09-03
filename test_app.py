@@ -335,7 +335,42 @@ class TestBitacoraDOC(unittest.TestCase):
             campos_extra={"sitio_mantenimiento": "Subestación 1"}
         )
 
-        db.session.add_all([t_tec, t_eq, t_cred, t_mnt])
+        # Credencial vencida (debe ser excluida)
+        t_cred_vencida = Tarea(
+            bitacora_id=bitacora.id,
+            operador_id=self.operador.id,
+            tipo_tarea="alta_credencial_especial",
+            ticket="SEC-EXPIRED",
+            titulo="Credencial vencida",
+            cliente="Banco Test",
+            estado="completada",
+            descripcion="Auditoria pasada",
+            es_actividad_programada=True,
+            fecha_programada_inicio=ahora - timedelta(hours=5),
+            fecha_programada_fin=ahora - timedelta(hours=2),
+            campos_extra={
+                "ticket_cliente": "TK-BN-OLD",
+                "credenciales_lista": [{"persona_propietaria": "Persona Vieja", "codigo_alfanumerico": "OLD-0000"}]
+            }
+        )
+
+        # Mantenimiento pasado (debe ser excluido)
+        t_mnt_pasado = Tarea(
+            bitacora_id=bitacora.id,
+            operador_id=self.supervisor.id,
+            tipo_tarea="mantenimiento",
+            ticket="MNT-OLD",
+            titulo="Corte Pasado",
+            cliente="DC Ops",
+            estado="completada",
+            descripcion="Mantenimiento ya terminado",
+            es_actividad_programada=True,
+            fecha_programada_inicio=ahora - timedelta(hours=4),
+            fecha_programada_fin=ahora - timedelta(hours=1),
+            campos_extra={"sitio_mantenimiento": "Subestación 1"}
+        )
+
+        db.session.add_all([t_tec, t_eq, t_cred, t_cred_vencida, t_mnt, t_mnt_pasado])
         db.session.commit()
 
         # Test HTML Views
@@ -355,18 +390,66 @@ class TestBitacoraDOC(unittest.TestCase):
         self.assertEqual(len(data_acc['tecnicos']), 1)
         self.assertEqual(len(data_acc['equipos']), 1)
 
-        # Test API JSON Credenciales
+        # Test API JSON Credenciales (debe incluir la vigente y excluir la vencida)
         r_api_cred = self.client.get(f'/api/tv/{self.region.id}/credenciales')
         self.assertEqual(r_api_cred.status_code, 200)
         data_cred = r_api_cred.get_json()
         self.assertEqual(len(data_cred['credenciales']), 1)
         self.assertEqual(data_cred['credenciales'][0]['codigo_alfanumerico'], 'CRD-9988')
+        # Verificar que no está la vieja
+        codigos = [c['codigo_alfanumerico'] for c in data_cred['credenciales']]
+        self.assertNotIn('OLD-0000', codigos)
 
-        # Test API JSON Planificadas
+        # Test API JSON Planificadas (debe excluir la pasada)
         r_api_plan = self.client.get(f'/api/tv/{self.region.id}/planificadas')
         self.assertEqual(r_api_plan.status_code, 200)
         data_plan = r_api_plan.get_json()
-        self.assertTrue(len(data_plan['planificadas']) >= 1)
+        tickets_plan = [p['ticket'] for p in data_plan['planificadas']]
+        self.assertIn('MNT-01', tickets_plan)
+        self.assertNotIn('MNT-OLD', tickets_plan)
+
+    def test_08_sub_admin_crud_usuarios_regional(self):
+        # 1. Login como sub_admin (supervisor de region 1)
+        self.login_as(self.supervisor)
+
+        # Listar usuarios: solo debe ver los de su región (operador_test y operador_test2 y supervisor_test), NO admin_global ni usuarios de otra region
+        r_list = self.client.get('/api/admin/usuarios')
+        self.assertEqual(r_list.status_code, 200)
+        users = r_list.get_json()
+        usernames = [u['username'] for u in users]
+        self.assertNotIn('admin_global', usernames)
+
+        # 2. Crear un nuevo operador en su región
+        r_create = self.client.post('/api/admin/usuarios', json={
+            "username": "op_nuevo_regional",
+            "email": "nuevo@regional.com",
+            "nombre_completo": "Operador Nuevo Regional",
+            "rol": "operador",
+            "password": "password123"
+        })
+        self.assertEqual(r_create.status_code, 201)
+        new_u_id = r_create.get_json()['usuario']['id']
+        self.assertEqual(r_create.get_json()['usuario']['region_id'], self.region.id)
+
+        # 3. Editar usuario de su región
+        r_edit = self.client.put(f'/api/admin/usuarios/{new_u_id}', json={
+            "nombre_completo": "Operador Modificado",
+            "email": "modificado@regional.com",
+            "rol": "operador",
+            "activo": True
+        })
+        self.assertEqual(r_edit.status_code, 200)
+        self.assertEqual(r_edit.get_json()['usuario']['nombre_completo'], 'Operador Modificado')
+
+        # 4. Intento inválido: Sub_admin intenta elevar a admin global (debe rechazarse)
+        r_elevate = self.client.put(f'/api/admin/usuarios/{new_u_id}', json={
+            "rol": "admin"
+        })
+        self.assertEqual(r_elevate.status_code, 403)
+
+        # 5. Eliminar usuario de su región
+        r_del = self.client.delete(f'/api/admin/usuarios/{new_u_id}')
+        self.assertEqual(r_del.status_code, 200)
 
 if __name__ == '__main__':
     unittest.main()

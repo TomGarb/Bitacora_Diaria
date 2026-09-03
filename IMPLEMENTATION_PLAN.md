@@ -1,140 +1,127 @@
-# Plan de Implementación — Bitácora Diaria DOC
+# Plan de Implementación y Arquitectura — Bitácora Diaria DOC
 
-Documento de arquitectura, decisiones técnicas y diseño del sistema web de bitácoras para operadores de Datacenter (DOC).
-
----
-
-## 1. Arquitectura Técnica
-
-- **Backend:** Python con Flask 3.0, SQLAlchemy 3.1 / 2.0 y Application Factory Pattern (`create_app`).
-- **Base de Datos:** PostgreSQL con soporte DDL en `init_db.sql` y fallback local a SQLite en desarrollo con auto-migración de esquema al inicio.
-- **Frontend:** HTML5, CSS3 moderno con variables CSS y diseño responsive oscuro/claro profesional de Datacenter, JavaScript Vanilla modular por vista.
-- **Autenticación:** Sesiones de desarrollo seguras con Werkzeug (`generate_password_hash`), decorators `@login_required`, `@sub_admin_required`, `@admin_required` y soporte de claims para integración futura con **Keycloak** (`keycloak_sub`).
+Documento de arquitectura técnica, módulos implementados y especificación de diseño para nuevas funcionalidades.
 
 ---
 
-## 2. Modelo de Datos y Entidades
+## 1. Módulos Implementados
+
+### A. Exclusión en Tiempo Real en Dashboards de TV
+- **Credenciales Especiales:** La API `/api/tv/<region_id>/credenciales` evalúa en tiempo real contra `datetime.utcnow()` y excluye automáticamente todas aquellas cuya fecha/hora de finalización ya expiró (`estado_vigencia == 'finalizada'`). Únicamente se proyectan credenciales *Vigentes Ahora* o *Programadas para hoy*.
+- **Agenda de Tareas Planificadas:** La API `/api/tv/<region_id>/planificadas` evalúa contra `datetime.utcnow()` y descarta automáticamente las tareas cuya fecha de fin ya fue superada (`estado_tiempo == 'pasada'`). Solo se proyectan actividades *En Curso* y *Próximas*.
+
+### B. Gestión y CRUD Completo de Usuarios & Permisos
+- **Acceso Regional para Sub-admin (`sub_admin`):**
+  - Los supervisores acceden a `/admin` (vía menú *Supervisión DOC > Gestión de Usuarios*).
+  - Solo pueden visualizar, crear, editar y eliminar operadores y sub-admins pertenecientes a su propia sede (`region_id`).
+  - No pueden ver administradores globales ni usuarios de otras regiones.
+  - No pueden elevar usuarios al rol de `admin` global ni transferir usuarios a otras regiones.
+- **Acceso Global para Administrador (`admin`):**
+  - Control total sobre todas las sedes, asignación libre de regiones y roles globales.
+- **Modal de Edición Interactivo:**
+  - Modificación de Nombre Completo, Email Corporativo, Rol, Región, Estado (Activo/Inactivo) y Reset de Contraseña.
+  - Eliminación permanente de usuarios con confirmación de seguridad (bloqueando auto-eliminación de la cuenta en sesión).
+
+---
+
+## 2. Propuesta de Arquitectura: Módulo de Equipos por Sede y Métricas Segmentadas
+
+> [!NOTE]
+> Especificación técnica detallada para el módulo de **Equipos / Grupos de Trabajo por Datacenter** y **Segmentación de Métricas en Dashboard Principal**.
+
+### A. Modelo de Datos Relacional
 
 ```mermaid
 erDiagram
-    USUARIO {
-        int id PK
-        string username
-        string email
-        string password_hash
-        string nombre_completo
-        string rol "admin | sub_admin | operador"
-        int region_id FK
-        string keycloak_sub
-        bool activo
-    }
-    
     REGION {
         int id PK
         string nombre
         string codigo
+    }
+
+    USUARIO {
+        int id PK
+        string username
+        string nombre_completo
+        int region_id FK
+    }
+
+    EQUIPO {
+        int id PK
+        string nombre
         string descripcion
-        bool activa
-    }
-    
-    REGION_CONFIG {
-        int id PK
         int region_id FK
-        json tipos_tarea_habilitados
-        json campos_extra
-        json turnos_config
-        json salas_datacenter
-        json config_ui
+        bool activo
+        datetime created_at
     }
-    
-    BITACORA {
-        int id PK
-        date fecha
-        string turno "manana | tarde | noche | central"
-        int region_id FK
-        string estado "abierta | cerrada"
-        int supervisor_id FK
-        text observaciones_cierre
+
+    USUARIO_EQUIPOS {
+        int usuario_id FK
+        int equipo_id FK
     }
-    
+
     TAREA {
         int id PK
         int bitacora_id FK
         int operador_id FK
+        int equipo_id FK "Opcional: equipo asignado a la tarea"
         string tipo_tarea
         string ticket
-        string titulo
-        string cliente
-        string estado "pendiente | en_progreso | completada | cancelada"
-        text descripcion
-        bool es_actividad_programada
-        datetime fecha_programada_inicio
-        datetime fecha_programada_fin
-        json campos_extra
-    }
-    
-    SUBTAREA {
-        int id PK
-        int tarea_id FK
-        string ticket
-        string titulo
         string estado
-        text descripcion
     }
 
-    FEEDBACK {
-        int id PK
-        int usuario_id FK
-        int region_id FK
-        string tipo "error_sistema | modificacion_tarea | sugerencia_mejora | otro"
-        string asunto
-        text mensaje
-        string estado "pendiente | en_revision | resuelto | descartado"
-        text respuesta_admin
-        datetime created_at
-        datetime updated_at
-    }
-    
-    REGION ||--o{ USUARIO : "pertenece a"
-    REGION ||--o| REGION_CONFIG : "configura"
-    REGION ||--o{ BITACORA : "registra"
-    BITACORA ||--o{ TAREA : "contiene"
-    TAREA ||--o{ SUBTAREA : "incluye"
+    REGION ||--o{ EQUIPO : "contiene"
+    EQUIPO ||--o{ USUARIO_EQUIPOS : "integra"
+    USUARIO ||--o{ USUARIO_EQUIPOS : "pertenece a N"
+    EQUIPO ||--o{ TAREA : "ejecuta"
     USUARIO ||--o{ TAREA : "crea"
-    USUARIO ||--o{ FEEDBACK : "reporta"
-    REGION ||--o{ FEEDBACK : "origen"
 ```
 
----
+### B. Estructura de Tablas SQL (PostgreSQL & SQLite)
 
-## 3. Tipos de Tareas Contempladas y Reglas de Negocio
+```sql
+-- Tabla de Equipos por Región
+CREATE TABLE IF NOT EXISTS equipos (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    descripcion TEXT,
+    region_id INTEGER NOT NULL REFERENCES regiones(id) ON DELETE CASCADE,
+    activo BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-1. **`manos_remotas`**: Tareas operativas de soporte físico.
-2. **`manos_inteligentes`**: Soporte avanzado y configuraciones.
-3. **`acceso_equipos`**: Programada por defecto, requiere `fecha_programada_inicio` (fin opcional) y `sala_datacenter`.
-4. **`retiro_equipos`**: Programada por defecto, requiere `fecha_programada_inicio` (fin opcional) y `sala_datacenter`.
-5. **`acceso_tecnicos`**: Programada por defecto, requiere `fecha_programada_inicio` (fin opcional), `sala_datacenter` y empresa.
-6. **`restore`**: Tareas de restauración de backups/sistemas (no programada por defecto, campos reseteados al cambiar).
-7. **`backup`**: Respaldos con soporte de subtareas (no programada por defecto).
-8. **`snapshot`**: Instantáneas de máquinas virtuales y storage (no programada por defecto).
-9. **`mantenimiento`**: Programada por defecto, requiere `fecha_programada_inicio` y `fecha_programada_fin` obligatorias + `sitio_mantenimiento` (Salas DC / Subestaciones).
-10. **`nota_de_turno`**: Novedades y avisos para el pase de guardia.
-11. **`tarea_extra`**: Tareas adicionales fuera de catálogo estándar.
-12. **`virtualizacion`**: Creación/modificación de VMs o hipervisores.
-13. **`incidente`**: Fallas o eventos no planificados.
-14. **`manejo_sitio_externo`**: Requiere `sitio_externo` (ej: Chile, Miami) y `cantidad_contactos`.
-15. **`alta_credencial_especial`**: Programada obligatoria por defecto (inicio y fin requeridos), oculta campo Título en UI y autogenera título descriptivo en backend. Requiere `ticket_cliente` y lista de múltiples credenciales asociadas (`persona_propietaria`, `codigo_alfanumerico`).
+-- Tabla intermedia Muchos a Muchos (Usuario <-> Equipos)
+CREATE TABLE IF NOT EXISTS usuario_equipos (
+    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    equipo_id INTEGER NOT NULL REFERENCES equipos(id) ON DELETE CASCADE,
+    PRIMARY KEY (usuario_id, equipo_id)
+);
 
----
+-- Columna opcional en Tareas para vincular tarea con un equipo específico
+ALTER TABLE tareas ADD COLUMN IF NOT EXISTS equipo_id INTEGER REFERENCES equipos(id) ON DELETE SET NULL;
+```
 
-## 4. Estructura de Secciones del Reporte de Correo
+### C. Reglas de Negocio y Control de Acceso (RBAC)
 
-El reporte generado en `/mail-preview` se estructura en:
-1. Encabezado corporativo (Centro de Operaciones, Región, Turno, Fecha).
-2. Notas de Turno y Novedades de Cierre (arriba).
-3. Resumen Ejecutivo de Contadores (Total, Completadas, En Progreso, Pendientes, Programadas).
-4. **Tabla 1:** Casos del Operador del Turno.
-5. **Tabla 2:** Actividades Programadas (desglosando Equipos, Técnicos y Mantenimientos).
-6. **Tabla 3:** Altas de Credenciales Especiales.
-7. **Tabla 4:** Manejo de Sitios Externos.
-8. **Tabla 5:** Tareas Extras Aplicadas.
+1. **Creación de Equipos por Región:**
+   - Cada **Sub-admin (Supervisor DOC)** puede crear, editar y archivar equipos **exclusivamente dentro de su región** (Ej: *Chile:* "Equipo Virtualización", "Equipo Manos Remotas"; *Argentina:* "Equipo Manos Inteligentes", "Equipo Backups").
+   - El **Admin Global** puede crear y administrar equipos en cualquiera de las regiones registradas.
+2. **Asignación Multiequipo de Operadores:**
+   - Un operador puede pertenecer a **0, 1 o múltiples equipos** dentro de su misma sede.
+   - En [`/perfil`](file:///c:/Users/Tomas/Desktop/Code/Bitacora%20Centro%20Operaciones/App/Templates/perfil.html), cada operador visualiza insignias con los nombres de todos los equipos a los que pertenece.
+3. **Métricas y Pestañas Dinámicas en Dashboard Principal ([`/dashboard`](file:///c:/Users/Tomas/Desktop/Code/Bitacora%20Centro%20Operaciones/App/Templates/dashboard.html)):**
+   - El backend consulta los equipos activos de la región del usuario logueado.
+   - En la cabecera de métricas del dashboard se generan pestañas dinámicas:
+     - `[ Toda la Sede (Consolidado) ]`
+     - `[ Equipo Virtualización ]`
+     - `[ Equipo Manos Remotas ]`
+     - `[ ... (N pestañas dinámicas según los equipos creados) ]`
+   - Al hacer clic en una pestaña, los KPIs (*Total Tareas, Completadas, En Progreso, Eficiencia %*), el gráfico de distribución y la tabla de actividades se recalculan en caliente filtrando las tareas ejecutadas por los operadores que integran dicho equipo (o tareas explícitamente asignadas al equipo).
+
+### D. Endpoints de API Propuestos
+
+- `GET /api/equipos`: Lista equipos de la región del usuario actual (con lista de operadores miembros).
+- `POST /api/equipos`: Creación de equipo (valida pertenencia regional para sub_admin).
+- `PUT /api/equipos/<id>`: Actualización de datos y reasignación de operadores miembros.
+- `DELETE /api/equipos/<id>`: Eliminación/desactivación de equipo.
+- `GET /api/dashboard/kpis?equipo_id=<id>`: Retorna métricas segmentadas exclusivamente para ese grupo de trabajo.

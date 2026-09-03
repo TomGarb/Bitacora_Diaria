@@ -148,6 +148,10 @@ def api_tv_credenciales(region_id):
         else:
             estado_vigencia = 'vigente' if t.estado in ['en_progreso', 'completada'] else 'programada'
 
+        # Si ya finalizó/venció, NO debe mostrarse en el Dashboard de TV
+        if estado_vigencia == 'finalizada':
+            continue
+
         # Formato de horarios
         hora_ini_str = inicio.strftime('%H:%M') if inicio else '--:--'
         hora_fin_str = fin.strftime('%H:%M') if fin else '--:--'
@@ -175,9 +179,9 @@ def api_tv_credenciales(region_id):
                 'estado_tarea': t.estado
             })
 
-    # Ordenar: primero las vigentes ahora, luego programadas, al final finalizadas
-    prioridad = {'vigente': 1, 'programada': 2, 'finalizada': 3}
-    credenciales.sort(key=lambda c: prioridad.get(c['estado_vigencia'], 4))
+    # Ordenar: primero las vigentes ahora, luego programadas
+    prioridad = {'vigente': 1, 'programada': 2}
+    credenciales.sort(key=lambda c: prioridad.get(c['estado_vigencia'], 3))
 
     return jsonify({
         'region': region.to_dict(),
@@ -230,6 +234,10 @@ def api_tv_planificadas(region_id):
             estado_tiempo = 'en_curso'
         else:
             estado_tiempo = 'proxima'
+
+        # Si ya finalizó (fecha fin superada), NO debe aparecer en el Dashboard TV
+        if estado_tiempo == 'pasada':
+            continue
 
         hora_inicio_str = inicio.strftime('%H:%M') if inicio else '--:--'
         hora_fin_str = fin.strftime('%H:%M') if fin else '--:--'

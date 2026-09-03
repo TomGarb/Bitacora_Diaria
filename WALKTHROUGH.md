@@ -140,8 +140,18 @@ Módulo exclusivo para proyectar en monitores y Smart TVs de los centros de oper
    - **Columna Derecha:** Inbounds / Outbounds de Equipos (Ticket, Cliente, Sala DC, Tipo de Movimiento).
 2. **TV 2 — Credenciales Especiales Activas (`/tv/<region_id>/credenciales`):**
    - Tarjetas gigantes de alto contraste para guardias y operadores con **Código Alfanumérico Gigante**, Nombre de Persona, Ticket Cliente y Ventana Horaria de Vigencia.
+   - **Exclusión en tiempo real:** Las credenciales que han superado su fecha/hora de finalización se ocultan automáticamente.
 3. **TV 3 — Agenda de Tareas Planificadas (`/tv/<region_id>/planificadas`):**
-   - Cartelera de Aeropuerto (Airport Flight Board) en tiempo real con horarios, tickets, clientes, salas, tareas en curso con highlight pulsante y atenuación de tareas finalizadas.
+   - Cartelera de Aeropuerto (Airport Flight Board) en tiempo real con horarios, tickets, clientes, salas y tareas en curso con highlight pulsante.
+   - **Exclusión en tiempo real:** Las tareas planificadas finalizadas (fecha/hora fin superada) son removidas de la cartelera.
+
+### K. Gestión y CRUD de Usuarios & Permisos (`/admin`)
+- **Supervisores DOC (`sub_admin`):**
+  - Gestión de operadores y sub-admins dentro de su propia sede.
+  - Creación, modificación de datos de perfil, reset de contraseña, activación/bloqueo y eliminación de cuentas regionales.
+  - Bloqueo de escalación de privilegios hacia administrador global.
+- **Administrador Global (`admin`):**
+  - Visibilidad y control total sobre todas las sedes, gestión de regiones y asignación de permisos globales.
 
 ---
 
