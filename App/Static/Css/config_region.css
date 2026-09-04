@@ -41,6 +41,7 @@
   cursor: pointer;
   transition: all 0.2s;
   user-select: none;
+  position: relative;
 }
 
 .task-type-toggle-card:hover {
@@ -51,6 +52,49 @@
 .task-type-toggle-card.selected {
   border-color: var(--primary);
   background: rgba(59, 130, 246, 0.12);
+}
+
+.custom-card-actions {
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+.task-type-toggle-card:hover .custom-card-actions {
+  opacity: 1;
+}
+
+.extra-field-row {
+  background: #0f172a;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 0.9rem;
+  margin-bottom: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.extra-field-main-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1.2fr 140px 110px 36px;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.extra-field-options-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: rgba(15, 23, 42, 0.7);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px dashed rgba(59, 130, 246, 0.3);
+}
+
+@media (max-width: 850px) {
+  .extra-field-main-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .shift-config-card {

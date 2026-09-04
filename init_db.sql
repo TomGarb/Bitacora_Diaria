@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS region_configs (
     id SERIAL PRIMARY KEY,
     region_id INTEGER NOT NULL UNIQUE REFERENCES regiones(id) ON DELETE CASCADE,
     tipos_tarea_habilitados JSONB NOT NULL DEFAULT '["manos_remotas", "manos_inteligentes", "acceso_equipos", "retiro_equipos", "acceso_tecnicos", "restore", "backup", "snapshot", "mantenimiento", "nota_de_turno", "tarea_extra", "virtualizacion", "incidente", "manejo_sitio_externo", "alta_credencial_especial"]'::jsonb,
+    tipos_tarea_custom JSONB NOT NULL DEFAULT '[]'::jsonb,
     campos_extra JSONB NOT NULL DEFAULT '{
         "alta_credencial_especial": [
             {"nombre": "persona_propietaria", "tipo": "text", "requerido": true, "label": "Persona Propietaria"},

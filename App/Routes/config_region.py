@@ -25,11 +25,14 @@ def index():
         config = RegionConfig(
             region_id=region.id,
             tipos_tarea_habilitados=[t["id"] for t in TIPOS_TAREA_DEFAULT],
+            tipos_tarea_custom=[],
             campos_extra=CAMPOS_EXTRA_DEFAULT,
             turnos_config=TURNOS_DEFAULT
         )
         db.session.add(config)
         db.session.commit()
+
+    config_dict = config.to_dict()
 
     return render_template(
         'config_region.html',
@@ -37,7 +40,7 @@ def index():
         region=region,
         regiones=regiones_disponibles,
         config=config,
-        catalogo_tipos=TIPOS_TAREA_DEFAULT
+        catalogo_tipos=config_dict.get('catalogo_completo_tipos', TIPOS_TAREA_DEFAULT)
     )
 
 @config_region_bp.route('/api/config/<int:region_id>', methods=['GET'])
@@ -49,10 +52,17 @@ def obtener_config(region_id):
         config = RegionConfig(
             region_id=region.id,
             tipos_tarea_habilitados=[t["id"] for t in TIPOS_TAREA_DEFAULT],
+            tipos_tarea_custom=[],
             campos_extra=CAMPOS_EXTRA_DEFAULT,
             turnos_config=TURNOS_DEFAULT
         )
-    equipos = [{'id': eq.id, 'nombre': eq.nombre} for eq in region.equipos.filter_by(activo=True)]
+    
+    equipos = []
+    if hasattr(region, 'equipos') and region.equipos is not None:
+        try:
+            equipos = [{'id': eq.id, 'nombre': eq.nombre} for eq in region.equipos.filter_by(activo=True)]
+        except Exception:
+            equipos = []
 
     return jsonify({
         'region': {
@@ -79,6 +89,9 @@ def guardar_config(region_id):
         db.session.add(config)
 
     data = request.get_json() or {}
+
+    if 'tipos_tarea_custom' in data:
+        config.tipos_tarea_custom = list(data['tipos_tarea_custom'])
 
     if 'tipos_tarea_habilitados' in data:
         # Asegurarse de que sea una lista de strings

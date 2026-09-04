@@ -560,5 +560,91 @@ class TestBitacoraDOC(unittest.TestCase):
         self.assertEqual(t_data['subtareas'][0]['ticket'], 'SUB-7701-A')
         self.assertEqual(t_data['estado'], 'en_progreso')
 
+    def test_11_crear_tipo_tarea_custom_y_campos_dinamicos(self):
+        # 1. Supervisor configura un nuevo tipo de tarea personalizada con campos dinámicos
+        self.login_as(self.supervisor)
+        
+        # Obtener configuración actual
+        r_cfg = self.client.get(f'/api/config/{self.region.id}')
+        self.assertEqual(r_cfg.status_code, 200)
+        cfg_actual = r_cfg.get_json()['config']
+
+        nuevo_tipo_custom = {
+            "id": "reemplazo_discos",
+            "nombre": "Reemplazo de Discos / Storage",
+            "icono": "bi-hdd-fill",
+            "descripcion": "Sustitución de unidades de almacenamiento",
+            "es_programada_default": False,
+            "es_custom": True
+        }
+
+        campos_custom = [
+            {"nombre": "nro_serie_viejo", "label": "N° Serie Retirado", "tipo": "text", "requerido": True},
+            {"nombre": "tipo_disco", "label": "Tecnología de Disco", "tipo": "select", "opciones": ["SAS 10K", "SATA SSD", "NVMe Gen4"], "requerido": True},
+            {"nombre": "slot_rack", "label": "Slot / Bahía", "tipo": "text", "requerido": False}
+        ]
+
+        tipos_habilitados = list(cfg_actual['tipos_tarea_habilitados']) + ["reemplazo_discos"]
+        campos_extra = dict(cfg_actual['campos_extra'])
+        campos_extra['reemplazo_discos'] = campos_custom
+
+        r_save = self.client.put(f'/api/config/{self.region.id}', json={
+            "tipos_tarea_custom": [nuevo_tipo_custom],
+            "tipos_tarea_habilitados": tipos_habilitados,
+            "campos_extra": campos_extra,
+            "salas_datacenter": cfg_actual['salas_datacenter'],
+            "turnos_config": cfg_actual['turnos_config'],
+            "config_ui": cfg_actual['config_ui']
+        })
+
+        self.assertEqual(r_save.status_code, 200)
+        cfg_guardada = r_save.get_json()['config']
+        self.assertEqual(len(cfg_guardada['tipos_tarea_custom']), 1)
+        self.assertIn("reemplazo_discos", cfg_guardada['tipos_tarea_habilitados'])
+        self.assertTrue(any(t['id'] == 'reemplazo_discos' for t in cfg_guardada['catalogo_completo_tipos']))
+
+        # 2. Operador intenta crear tarea sin completar campo obligatorio custom (nro_serie_viejo)
+        self.login_as(self.operador)
+        r_fail = self.client.post('/api/tareas', json={
+            "ticket": "STG-9941",
+            "titulo": "Cambio de disco en Storage SAN 01",
+            "cliente": "Telco Corp",
+            "tipo_tarea": "reemplazo_discos",
+            "estado": "en_progreso",
+            "descripcion": "Disco en slot 04 en estado Predictive Failure.",
+            "campos_extra": {
+                "tipo_disco": "NVMe Gen4",
+                "slot_rack": "Slot 04"
+                # Falta nro_serie_viejo
+            }
+        })
+        self.assertEqual(r_fail.status_code, 400)
+        self.assertIn("N° Serie Retirado", r_fail.get_json()['error'])
+
+        # 3. Operador completa todos los campos requeridos y crea la tarea exitosamente
+        r_ok = self.client.post('/api/tareas', json={
+            "ticket": "STG-9941",
+            "titulo": "Cambio de disco en Storage SAN 01",
+            "cliente": "Telco Corp",
+            "tipo_tarea": "reemplazo_discos",
+            "estado": "en_progreso",
+            "descripcion": "Disco en slot 04 en estado Predictive Failure.",
+            "campos_extra": {
+                "nro_serie_viejo": "SN-WD-9912044",
+                "tipo_disco": "NVMe Gen4",
+                "slot_rack": "Slot 04"
+            }
+        })
+        self.assertEqual(r_ok.status_code, 201)
+        tarea_creada = r_ok.get_json()['tarea']
+        self.assertEqual(tarea_creada['tipo_tarea'], 'reemplazo_discos')
+        self.assertEqual(tarea_creada['campos_extra']['nro_serie_viejo'], 'SN-WD-9912044')
+        self.assertEqual(tarea_creada['campos_extra']['tipo_disco'], 'NVMe Gen4')
+
+        # 4. Consultar tarea por ID
+        r_get_t = self.client.get(f"/api/tareas/{tarea_creada['id']}")
+        self.assertEqual(r_get_t.status_code, 200)
+        self.assertEqual(r_get_t.get_json()['campos_extra']['slot_rack'], 'Slot 04')
+
 if __name__ == '__main__':
     unittest.main()

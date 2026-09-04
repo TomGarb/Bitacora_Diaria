@@ -26,24 +26,47 @@
   </div>
   {% endif %}
 
-  <!-- SECCIÓN 1: Tipos de Tareas Habilitados -->
+  <!-- SECCIÓN 1: Tipos de Tareas Habilitados y Personalizados -->
   <div class="config-section">
-    <div class="config-section-title">
-      <i class="bi bi-toggles"></i> 1. Catálogo de Actividades y Tipos de Tareas Habilitadas
-    </div>
-    <div class="config-section-desc">
-      Seleccione qué actividades son realizadas por los operadores de <strong>{{ region.nombre if region else 'esta región' }}</strong>. Los operadores únicamente verán y podrán cargar las tareas seleccionadas.
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem; margin-bottom:0.75rem;">
+      <div>
+        <div class="config-section-title">
+          <i class="bi bi-toggles"></i> 1. Catálogo de Actividades y Tipos de Tareas
+        </div>
+        <div class="config-section-desc" style="margin-bottom:0;">
+          Seleccione qué actividades son realizadas por los operadores de <strong>{{ region.nombre if region else 'esta región' }}</strong>. Además, puede <strong>crear nuevos tipos de tareas</strong> a medida para su centro de operaciones.
+        </div>
+      </div>
+      <button type="button" id="btn-crear-tipo-custom" class="btn btn-primary btn-sm" style="white-space:nowrap;">
+        <i class="bi bi-plus-circle"></i> Crear Nuevo Tipo de Tarea
+      </button>
     </div>
 
-    <div class="task-type-grid">
+    <div class="task-type-grid" id="task-type-grid-container">
+      <!-- Tarjetas de tipos cargadas y renderizadas dinámicamente vía JS -->
       {% for t in catalogo_tipos %}
-      <div class="task-type-toggle-card {% if config and (t.id in config.tipos_tarea_habilitados) %}selected{% endif %}" onclick="toggleTaskType(this)">
+      <div class="task-type-toggle-card {% if config and (t.id in config.tipos_tarea_habilitados) %}selected{% endif %}" onclick="toggleTaskType(this)" data-type-id="{{ t.id }}" data-is-custom="{{ 'true' if t.es_custom else 'false' }}">
         <input type="checkbox" class="type-checkbox" value="{{ t.id }}" {% if config and (t.id in config.tipos_tarea_habilitados) %}checked{% endif %} style="pointer-events:none;">
         <i class="bi {{ t.icono }}" style="font-size: 1.25rem; color: var(--primary);"></i>
-        <div>
-          <strong style="font-size:0.875rem; color:var(--text-primary); display:block;">{{ t.nombre }}</strong>
+        <div style="flex: 1; min-width: 0;">
+          <div style="display:flex; align-items:center; gap:0.35rem;">
+            <strong style="font-size:0.875rem; color:var(--text-primary); display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ t.nombre }}</strong>
+            {% if t.es_custom %}
+            <span class="badge" style="background:rgba(59,130,246,0.2); color:#60a5fa; font-size:0.65rem; padding:1px 4px;">Custom</span>
+            {% endif %}
+          </div>
           <small style="font-size:0.75rem; color:var(--text-muted);">{{ t.id }}</small>
         </div>
+        {% if t.es_custom %}
+        <div class="custom-card-actions" onclick="event.stopPropagation();" style="display:flex; gap:0.25rem;">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="editarTipoCustom('{{ t.id }}')" style="padding:0.15rem 0.35rem;" title="Editar tipo">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button type="button" class="btn btn-danger btn-sm" onclick="eliminarTipoCustom('{{ t.id }}')" style="padding:0.15rem 0.35rem;" title="Eliminar tipo">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+        {% endif %}
       </div>
       {% endfor %}
     </div>
@@ -55,7 +78,7 @@
       <i class="bi bi-input-cursor-text"></i> 2. Campos Personalizados por Tipo de Actividad
     </div>
     <div class="config-section-desc">
-      Configure campos adicionales específicos requeridos para cada tipo de tarea (por ejemplo: para <em>Alta de Credenciales Especiales</em> se configuran Persona Propietaria, Ticket Cliente y Código Alfanumérico).
+      Configure qué datos y campos específicos deben completar los operadores para cada tipo de tarea (campos de texto, numéricos, fechas, menús desplegables con opciones o salas DC, casillas de verificación y obligatoriedad).
     </div>
 
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:1rem;">
@@ -63,13 +86,13 @@
         <label class="form-label" style="margin-bottom:0;">Tipo de Tarea a configurar:</label>
         <select id="select-task-type-for-fields" class="form-select" style="min-width: 260px;">
           {% for t in catalogo_tipos %}
-            <option value="{{ t.id }}" {% if t.id == 'alta_credencial_especial' %}selected{% endif %}>{{ t.nombre }}</option>
+            <option value="{{ t.id }}" {% if t.id == 'alta_credencial_especial' %}selected{% endif %}>{{ t.nombre }}{% if t.es_custom %} (Personalizado){% endif %}</option>
           {% endfor %}
         </select>
       </div>
 
       <button type="button" id="btn-add-extra-field" class="btn btn-secondary btn-sm">
-        <i class="bi bi-plus-lg"></i> Agregar Campo Extra
+        <i class="bi bi-plus-lg"></i> Agregar Campo Personalizado
       </button>
     </div>
 
@@ -132,6 +155,73 @@
     </button>
   </div>
 </form>
+
+<!-- MODAL: Crear / Editar Tipo de Tarea Personalizada -->
+<div id="modal-tipo-custom" class="modal-overlay">
+  <div class="modal-container" style="max-width: 580px;">
+    <div class="modal-header">
+      <h3 id="modal-tipo-custom-title" class="modal-title">Nuevo Tipo de Tarea Personalizada</h3>
+      <button type="button" class="modal-close">&times;</button>
+    </div>
+    <form id="form-tipo-custom" onsubmit="guardarModalTipoCustom(event)">
+      <div class="modal-body">
+        
+        <div class="form-group">
+          <label class="form-label" for="custom-type-nombre">Nombre Visible del Tipo de Tarea <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="custom-type-nombre" class="form-control" placeholder="Ej: Reemplazo de Discos / Storage" required oninput="autoGenerarIdTecnico()">
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label" for="custom-type-id">Identificador Técnico <span style="color:var(--danger)">*</span></label>
+            <input type="text" id="custom-type-id" class="form-control" placeholder="ej: reemplazo_discos" required>
+            <small style="color:var(--text-muted); font-size:0.75rem;">Sin espacios ni caracteres especiales.</small>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="custom-type-icono">Ícono Representativo</label>
+            <select id="custom-type-icono" class="form-select">
+              <option value="bi-hdd-fill">💽 bi-hdd-fill (Discos / Almacenamiento)</option>
+              <option value="bi-server">🖥️ bi-server (Servidores / Racks)</option>
+              <option value="bi-ethernet">🌐 bi-ethernet (Redes / Fibra)</option>
+              <option value="bi-lightning-charge">⚡ bi-lightning-charge (Energía / UPS)</option>
+              <option value="bi-shield-check">🛡️ bi-shield-check (Seguridad / Auditoría)</option>
+              <option value="bi-cpu">⚙️ bi-cpu (Hardware / Procesamiento)</option>
+              <option value="bi-box-seam">📦 bi-box-seam (Logística / Encomiendas)</option>
+              <option value="bi-tools">🔧 bi-tools (Mantenimiento Técnico)</option>
+              <option value="bi-diagram-3">📐 bi-diagram-3 (Topología / Infra)</option>
+              <option value="bi-clipboard-check">📋 bi-clipboard-check (Checklist de Guardia)</option>
+              <option value="bi-thermometer-half">🌡️ bi-thermometer-half (Climatización / HVAC)</option>
+              <option value="bi-fire">🔥 bi-fire (Detección de Incendios)</option>
+              <option value="bi-database">🗄️ bi-database (Bases de Datos)</option>
+              <option value="bi-wrench-adjustable">🔩 bi-wrench-adjustable (Soporte Físico)</option>
+              <option value="bi-arrow-repeat">🔄 bi-arrow-repeat (Rutinas Periódicas)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="custom-type-desc">Descripción o Procedimiento Asociado</label>
+          <textarea id="custom-type-desc" class="form-control" rows="2" placeholder="Breve explicación de cuándo debe usarse esta tarea por los operadores..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-size:0.875rem;">
+            <input type="checkbox" id="custom-type-programada">
+            <span>Marcar por defecto como <strong>Actividad Programada</strong> (requerirá ventana horaria)</span>
+          </label>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-tipo-custom')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-save"></i> Guardar Tipo de Tarea
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}

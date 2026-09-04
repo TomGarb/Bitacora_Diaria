@@ -11,30 +11,20 @@ def get_database_uri():
     db_url = os.getenv('DATABASE_URL')
     
     # Si no se especifica, usar SQLite local
-    if not db_url:
+    if not db_url or db_url.strip() == '':
         return f"sqlite:///{base_dir / 'bitacora_dev.db'}"
     
-    # Si es PostgreSQL, verificar si el host es alcanzable en desarrollo
+    # Si es PostgreSQL, verificar si la conexión es realmente válida y autenticable
     if db_url.startswith('postgresql'):
         try:
-            import socket
-            import urllib.parse
-            parsed = urllib.parse.urlparse(db_url)
-            host = parsed.hostname or 'localhost'
-            port = parsed.port or 5432
-            
-            # Chequeo rápido de conexión con timeout de 0.5s
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(0.5)
-            result = sock.connect_ex((host, port))
-            sock.close()
-            
-            if result == 0:
-                return db_url
-            else:
-                print(f"[AVISO] Servidor PostgreSQL en {host}:{port} no disponible. Usando SQLite local de desarrollo.")
-                return f"sqlite:///{base_dir / 'bitacora_dev.db'}"
+            import psycopg2
+            # Intentar conexión real rápida (1 segundo de timeout)
+            conn = psycopg2.connect(db_url, connect_timeout=1)
+            conn.close()
+            return db_url
         except Exception:
+            print("[AVISO] No se pudo conectar al servidor PostgreSQL configurado (credenciales o base de datos no disponible).")
+            print(f"         -> Usando SQLite local de desarrollo ({base_dir / 'bitacora_dev.db'}).")
             return f"sqlite:///{base_dir / 'bitacora_dev.db'}"
             
     return db_url

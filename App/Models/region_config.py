@@ -72,7 +72,10 @@ class RegionConfig(db.Model):
     # Lista de IDs de tipos de tareas habilitados para esta región: ["manos_remotas", "backup", ...]
     tipos_tarea_habilitados = db.Column(db.JSON, nullable=False, default=lambda: [t["id"] for t in TIPOS_TAREA_DEFAULT])
     
-    # Diccionario de campos extra por tipo: {"alta_credencial_especial": [...]}
+    # Lista de tipos de tareas personalizados creados por admin/sub_admin para esta región
+    tipos_tarea_custom = db.Column(db.JSON, nullable=False, default=list)
+
+    # Diccionario de campos extra por tipo: {"alta_credencial_especial": [...], "mi_tarea_custom": [...]}
     campos_extra = db.Column(db.JSON, nullable=False, default=lambda: CAMPOS_EXTRA_DEFAULT)
     
     # Configuración de turnos personalizada por región
@@ -95,15 +98,24 @@ class RegionConfig(db.Model):
     region = db.relationship('Region', back_populates='config')
 
     def to_dict(self):
+        # Unificar catálogo por defecto con tipos personalizados
+        catalogo = [dict(t) for t in TIPOS_TAREA_DEFAULT]
+        custom_tipos = self.tipos_tarea_custom or []
+        for ct in custom_tipos:
+            item = dict(ct)
+            item['es_custom'] = True
+            catalogo.append(item)
+
         return {
             'id': self.id,
             'region_id': self.region_id,
             'tipos_tarea_habilitados': self.tipos_tarea_habilitados or [],
+            'tipos_tarea_custom': custom_tipos,
             'campos_extra': self.campos_extra or {},
             'turnos_config': self.turnos_config or [],
             'salas_datacenter': self.salas_datacenter or SALAS_DEFAULT,
             'config_ui': self.config_ui or {},
-            'catalogo_completo_tipos': TIPOS_TAREA_DEFAULT,
+            'catalogo_completo_tipos': catalogo,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
 

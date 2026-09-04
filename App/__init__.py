@@ -44,11 +44,14 @@ def create_app(config_name=None):
             from sqlalchemy import text
             with db.engine.connect() as conn:
                 try:
-                    # Chequear si existe la tabla region_configs y si le falta la columna salas_datacenter
+                    # Chequear si existe la tabla region_configs y si le faltan columnas
                     result = conn.execute(text("PRAGMA table_info(region_configs);"))
                     columns = [row[1] for row in result.fetchall()]
-                    if columns and 'salas_datacenter' not in columns:
-                        conn.execute(text("ALTER TABLE region_configs ADD COLUMN salas_datacenter JSON DEFAULT '[]';"))
+                    if columns:
+                        if 'salas_datacenter' not in columns:
+                            conn.execute(text("ALTER TABLE region_configs ADD COLUMN salas_datacenter JSON DEFAULT '[]';"))
+                        if 'tipos_tarea_custom' not in columns:
+                            conn.execute(text("ALTER TABLE region_configs ADD COLUMN tipos_tarea_custom JSON DEFAULT '[]';"))
                         conn.commit()
                 except Exception:
                     pass

@@ -117,53 +117,106 @@ function renderDynamicFields(container, fieldsList = [], values = {}) {
   fieldsList.forEach(field => {
     const formGroup = document.createElement('div');
     formGroup.className = 'form-group';
+    formGroup.style.marginBottom = '0.75rem';
 
-    const label = document.createElement('label');
-    label.className = 'form-label';
-    label.innerHTML = `${field.label || field.nombre} ${field.requerido ? '<span style="color:var(--danger)">*</span>' : ''}`;
+    const val = values[field.nombre] !== undefined ? values[field.nombre] : '';
 
-    let input;
-    const val = values[field.nombre] || '';
+    if (field.tipo === 'checkbox') {
+      const label = document.createElement('label');
+      label.style.display = 'flex';
+      label.style.alignItems = 'center';
+      label.style.gap = '0.5rem';
+      label.style.fontSize = '0.875rem';
+      label.style.cursor = 'pointer';
+      label.style.color = 'var(--text-primary)';
 
-    if (field.tipo === 'select') {
-      input = document.createElement('select');
-      input.className = 'form-select dynamic-field';
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.className = 'dynamic-field';
       input.name = field.nombre;
       input.dataset.fieldName = field.nombre;
-      input.required = !!field.requerido;
-      
-      const defaultOpt = document.createElement('option');
-      defaultOpt.value = '';
-      defaultOpt.textContent = '-- Seleccionar --';
-      input.appendChild(defaultOpt);
+      input.checked = (val === true || val === 'true' || val === 1 || val === '1');
 
-      (field.opciones || []).forEach(opt => {
-        const option = document.createElement('option');
-        option.value = opt;
-        option.textContent = opt;
-        if (opt === val) option.selected = true;
-        input.appendChild(option);
-      });
-    } else if (field.tipo === 'textarea') {
-      input = document.createElement('textarea');
-      input.className = 'form-control dynamic-field';
-      input.name = field.nombre;
-      input.dataset.fieldName = field.nombre;
-      input.required = !!field.requerido;
-      input.value = val;
+      label.appendChild(input);
+      const span = document.createElement('span');
+      span.innerHTML = `${field.label || field.nombre} ${field.requerido ? '<span style="color:var(--danger)">*</span>' : ''}`;
+      label.appendChild(span);
+
+      formGroup.appendChild(label);
     } else {
-      input = document.createElement('input');
-      input.type = field.tipo || 'text';
-      input.className = 'form-control dynamic-field';
-      input.name = field.nombre;
-      input.dataset.fieldName = field.nombre;
-      input.required = !!field.requerido;
-      input.value = val;
-      input.placeholder = `Ingrese ${field.label || field.nombre}...`;
+      const label = document.createElement('label');
+      label.className = 'form-label';
+      label.innerHTML = `${field.label || field.nombre} ${field.requerido ? '<span style="color:var(--danger)">*</span>' : ''}`;
+      formGroup.appendChild(label);
+
+      let input;
+      if (field.tipo === 'select') {
+        input = document.createElement('select');
+        input.className = 'form-select dynamic-field';
+        input.name = field.nombre;
+        input.dataset.fieldName = field.nombre;
+        input.required = !!field.requerido;
+        
+        const defaultOpt = document.createElement('option');
+        defaultOpt.value = '';
+        defaultOpt.textContent = '-- Seleccionar --';
+        input.appendChild(defaultOpt);
+
+        (field.opciones || []).forEach(opt => {
+          const option = document.createElement('option');
+          option.value = opt;
+          option.textContent = opt;
+          if (String(opt) === String(val)) option.selected = true;
+          input.appendChild(option);
+        });
+      } else if (field.tipo === 'textarea') {
+        input = document.createElement('textarea');
+        input.className = 'form-control dynamic-field';
+        input.name = field.nombre;
+        input.dataset.fieldName = field.nombre;
+        input.required = !!field.requerido;
+        input.rows = 2;
+        input.value = val;
+        input.placeholder = `Ingrese ${field.label || field.nombre}...`;
+      } else if (field.tipo === 'datetime' || field.tipo === 'datetime-local') {
+        input = document.createElement('input');
+        input.type = 'datetime-local';
+        input.className = 'form-control dynamic-field';
+        input.name = field.nombre;
+        input.dataset.fieldName = field.nombre;
+        input.required = !!field.requerido;
+        input.value = val ? String(val).replace(' ', 'T') : '';
+      } else if (field.tipo === 'date') {
+        input = document.createElement('input');
+        input.type = 'date';
+        input.className = 'form-control dynamic-field';
+        input.name = field.nombre;
+        input.dataset.fieldName = field.nombre;
+        input.required = !!field.requerido;
+        input.value = val;
+      } else if (field.tipo === 'number') {
+        input = document.createElement('input');
+        input.type = 'number';
+        input.className = 'form-control dynamic-field';
+        input.name = field.nombre;
+        input.dataset.fieldName = field.nombre;
+        input.required = !!field.requerido;
+        input.value = val;
+        input.placeholder = `Ingrese ${field.label || field.nombre}...`;
+      } else {
+        input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'form-control dynamic-field';
+        input.name = field.nombre;
+        input.dataset.fieldName = field.nombre;
+        input.required = !!field.requerido;
+        input.value = val;
+        input.placeholder = `Ingrese ${field.label || field.nombre}...`;
+      }
+
+      formGroup.appendChild(input);
     }
 
-    formGroup.appendChild(label);
-    formGroup.appendChild(input);
     container.appendChild(formGroup);
   });
 }
@@ -177,7 +230,13 @@ function extractDynamicFields(container) {
   inputs.forEach(input => {
     const name = input.dataset.fieldName;
     if (name) {
-      data[name] = input.value.trim();
+      if (input.type === 'checkbox') {
+        data[name] = input.checked;
+      } else if (input.type === 'number') {
+        data[name] = input.value !== '' ? Number(input.value) : '';
+      } else {
+        data[name] = input.value.trim();
+      }
     }
   });
   return data;

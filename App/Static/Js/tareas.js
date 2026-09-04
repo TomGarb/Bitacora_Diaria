@@ -107,7 +107,8 @@ function onTipoTareaChange() {
   }
 
   // 2. Comportamiento de Actividad Programada por Tipo
-  const esSiempreProgramada = ['alta_credencial_especial', 'acceso_equipos', 'retiro_equipos', 'acceso_tecnicos', 'mantenimiento'].includes(tipo);
+  const customTipoObj = (regionConfig?.tipos_tarea_custom || []).find(t => t.id === tipo);
+  const esSiempreProgramada = ['alta_credencial_especial', 'acceso_equipos', 'retiro_equipos', 'acceso_tecnicos', 'mantenimiento'].includes(tipo) || (customTipoObj && customTipoObj.es_programada_default);
   
   if (esSiempreProgramada) {
     progCheckbox.checked = true;
@@ -868,7 +869,9 @@ async function abrirModalDetalle(id) {
         for (const [k, v] of Object.entries(tarea.campos_extra)) {
           if (typeof v !== 'object') {
             const div = document.createElement('div');
-            div.innerHTML = `<strong>${k.replace(/_/g, ' ')}:</strong> ${v}`;
+            let displayVal = v;
+            if (typeof v === 'boolean') displayVal = v ? 'Sí' : 'No';
+            div.innerHTML = `<strong>${k.replace(/_/g, ' ')}:</strong> ${displayVal}`;
             extraContainer.appendChild(div);
           }
         }

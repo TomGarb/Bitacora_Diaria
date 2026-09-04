@@ -31,6 +31,7 @@ def index():
         if not bitacora:
             bitacora = Bitacora.query.filter_by(region_id=region_id).order_by(Bitacora.id.desc()).first()
 
+    config_dict = config.to_dict() if config else {}
     return render_template(
         'tareas.html',
         user=user,
@@ -38,7 +39,7 @@ def index():
         config=config,
         bitacora=bitacora,
         estados=ESTADOS_TAREA,
-        catalogo_tipos=TIPOS_TAREA_DEFAULT
+        catalogo_tipos=config_dict.get('catalogo_completo_tipos', TIPOS_TAREA_DEFAULT)
     )
 
 @tareas_bp.route('/api/tareas', methods=['GET'])
@@ -201,6 +202,17 @@ def crear_tarea():
             return jsonify({'error': 'Debe especificar el Sitio Externo (ej: Chile, Miami)'}), 400
         if campos_extra.get('cantidad_contactos') is None or str(campos_extra.get('cantidad_contactos')).strip() == '':
             return jsonify({'error': 'Debe indicar la cantidad de contactos que tuvieron con nosotros'}), 400
+
+    # 5. Validación genérica para campos dinámicos configurados en la región
+    if bitacora and bitacora.region and bitacora.region.config:
+        cfg_campos = (bitacora.region.config.campos_extra or {}).get(tipo_tarea, [])
+        for f in cfg_campos:
+            if f.get('requerido'):
+                nom = f.get('nombre')
+                lbl = f.get('label') or nom
+                val = campos_extra.get(nom)
+                if val is None or (isinstance(val, str) and not val.strip()) or (isinstance(val, list) and len(val) == 0):
+                    return jsonify({'error': f"El campo '{lbl}' es obligatorio para {tipo_tarea}"}), 400
 
     # Título: obligatorio para la mayoría, auto-completado para credenciales especiales
     titulo = (data.get('titulo') or '').strip()
