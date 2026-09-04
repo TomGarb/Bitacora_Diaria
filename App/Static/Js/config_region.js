@@ -5,6 +5,7 @@
 let currentRegionId = null;
 let currentConfig = null;
 let selectedTaskTypeForFields = 'alta_credencial_especial';
+let listaEquiposRegionCache = [];
 
 document.addEventListener('DOMContentLoaded', () => {
   currentRegionId = document.getElementById('config-region-id')?.value;
@@ -44,6 +45,7 @@ async function cargarConfiguracion(regionId) {
     if (!data || !data.config) return;
 
     currentConfig = data.config;
+    listaEquiposRegionCache = data.equipos_disponibles || [];
     
     // 1. Título UI y tema
     document.getElementById('cfg-titulo-ui').value = currentConfig.config_ui?.titulo_bitacora || 'Bitácora de Centro de Operaciones';
@@ -62,21 +64,21 @@ async function cargarConfiguracion(regionId) {
       }
     });
 
-    // 3. Renderizar campos extra del tipo seleccionado
+    // 3. Renderizar editor de campos extra para el tipo seleccionado actualmente
     renderCamposExtraEditor();
 
-    // 4. Renderizar turnos
+    // 4. Renderizar turnos operativos
     renderTurnosEditor();
 
-    // 5. Renderizar salas
+    // 5. Renderizar salas de Datacenter
     renderSalasEditor();
 
   } catch (error) {
-    console.error('Error cargando configuración:', error);
+    console.error('Error al cargar configuración:', error);
   }
 }
 
-// Renderizador del editor de salas
+// Renderizador de Salas de Datacenter
 function renderSalasEditor() {
   const container = document.getElementById('salas-editor-container');
   if (!container || !currentConfig) return;
@@ -84,18 +86,25 @@ function renderSalasEditor() {
   container.innerHTML = '';
   const salas = currentConfig.salas_datacenter || [];
 
-  salas.forEach(s => agregarFilaSala(s));
+  if (salas.length === 0) {
+    container.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem;">No hay salas configuradas para esta región.</p>';
+  } else {
+    salas.forEach(sala => {
+      agregarFilaSala(sala);
+    });
+  }
 }
 
 function agregarFilaSala(nombre = '') {
   const container = document.getElementById('salas-editor-container');
   if (!container) return;
 
+  if (container.querySelector('p')) container.innerHTML = '';
+
   const row = document.createElement('div');
   row.style.display = 'flex';
   row.style.gap = '0.5rem';
   row.style.alignItems = 'center';
-
   row.innerHTML = `
     <input type="text" class="form-control form-control-sm sala-nombre" placeholder="Nombre de sala / subestación (ej: Sala A, Subestación 1)" value="${nombre}" required>
     <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()" style="padding:0.25rem 0.4rem;">
@@ -183,32 +192,49 @@ function renderTurnosEditor() {
   const turnos = currentConfig.turnos_config || [];
 
   turnos.forEach(t => {
-    agregarFilaTurno(t.id, t.nombre, t.horario, t.dias, t.activo !== false);
+    agregarFilaTurno(t.id, t.nombre, t.horario, t.dias, t.equipo_id, t.activo !== false);
   });
 }
 
-function agregarFilaTurno(id = '', nombre = '', horario = '', dias = 'Lunes a Domingo', activo = true) {
+function agregarFilaTurno(id = '', nombre = '', horario = '', dias = 'Lunes a Domingo', equipoId = null, activo = true) {
   const container = document.getElementById('shifts-editor-container');
   if (!container) return;
 
+  let opcionesEquipos = '<option value="">Todos los Equipos (Toda la Sede)</option>';
+  listaEquiposRegionCache.forEach(eq => {
+    const isSelected = (equipoId && parseInt(equipoId) === eq.id) ? 'selected' : '';
+    opcionesEquipos += `<option value="${eq.id}" ${isSelected}>${eq.nombre}</option>`;
+  });
+
   const card = document.createElement('div');
   card.className = 'shift-config-card';
+  card.style.display = 'grid';
+  card.style.gridTemplateColumns = '1.2fr 1fr 1fr 1.2fr 40px';
+  card.style.gap = '0.6rem';
+  card.style.alignItems = 'center';
+
   card.innerHTML = `
     <div>
-      <label class="form-label" style="font-size:0.7rem;">Nombre Turno</label>
+      <label class="form-label" style="font-size:0.7rem; margin-bottom:0.2rem;">Nombre Turno</label>
       <input type="text" class="form-control form-control-sm shift-nombre" placeholder="Ej: Mañana" value="${nombre}" required>
       <input type="hidden" class="shift-id" value="${id || nombre.toLowerCase().replace(/ /g, '_')}">
     </div>
     <div>
-      <label class="form-label" style="font-size:0.7rem;">Rango Horario</label>
+      <label class="form-label" style="font-size:0.7rem; margin-bottom:0.2rem;">Rango Horario</label>
       <input type="text" class="form-control form-control-sm shift-horario" placeholder="Ej: 07:00 a 15:00" value="${horario}" required>
     </div>
     <div>
-      <label class="form-label" style="font-size:0.7rem;">Días Aplicables</label>
+      <label class="form-label" style="font-size:0.7rem; margin-bottom:0.2rem;">Días Aplicables</label>
       <input type="text" class="form-control form-control-sm shift-dias" placeholder="Ej: Lunes a Domingo" value="${dias}" required>
     </div>
+    <div>
+      <label class="form-label" style="font-size:0.7rem; margin-bottom:0.2rem;">Grupo / Equipo Aplicable</label>
+      <select class="form-select form-control-sm shift-equipo">
+        ${opcionesEquipos}
+      </select>
+    </div>
     <div style="text-align:right;">
-      <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.shift-config-card').remove()" style="margin-top:1rem; padding:0.3rem;">
+      <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.shift-config-card').remove()" style="margin-top:0.9rem; padding:0.3rem 0.5rem;" title="Eliminar Turno">
         <i class="bi bi-trash"></i>
       </button>
     </div>
@@ -249,16 +275,28 @@ async function guardarConfiguracion(e) {
 
   camposExtraActuales[selectedTaskTypeForFields] = camposDelTipo;
 
-  // 3. Turnos de la región
+  // 3. Turnos de la región con asignación de equipo
   const turnosConfig = [];
   document.querySelectorAll('.shift-config-card').forEach(card => {
     const id = card.querySelector('.shift-id')?.value.trim();
     const nombre = card.querySelector('.shift-nombre')?.value.trim();
     const horario = card.querySelector('.shift-horario')?.value.trim();
     const dias = card.querySelector('.shift-dias')?.value.trim();
+    const equipoIdVal = card.querySelector('.shift-equipo')?.value;
+    const equipoId = equipoIdVal ? parseInt(equipoIdVal) : null;
+    const eqObj = listaEquiposRegionCache.find(e => e.id === equipoId);
+    const equipoNombre = eqObj ? eqObj.nombre : 'Toda la Sede';
 
     if (nombre && horario) {
-      turnosConfig.push({ id: id || nombre.toLowerCase().replace(/ /g, '_'), nombre, horario, dias, activo: true });
+      turnosConfig.push({
+        id: id || nombre.toLowerCase().replace(/ /g, '_'),
+        nombre,
+        horario,
+        dias,
+        equipo_id: equipoId,
+        equipo_nombre: equipoNombre,
+        activo: true
+      });
     }
   });
 

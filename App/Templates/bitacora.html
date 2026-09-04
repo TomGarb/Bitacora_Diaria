@@ -71,7 +71,7 @@
             {% if turnos %}
               {% for t in turnos %}
                 {% if t.get('activo', true) %}
-                  <option value="{{ t.id }}">{{ t.nombre }} ({{ t.horario }})</option>
+                  <option value="{{ t.id }}">{{ t.nombre }} ({{ t.horario }}){% if t.get('equipo_nombre') and t.get('equipo_nombre') != 'Toda la Sede' %} — [{{ t.equipo_nombre }}]{% endif %}</option>
                 {% endif %}
               {% endfor %}
             {% else %}

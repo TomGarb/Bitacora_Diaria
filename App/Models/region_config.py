@@ -57,10 +57,10 @@ CAMPOS_EXTRA_DEFAULT = {
 
 # Turnos estándar configurados
 TURNOS_DEFAULT = [
-    {"id": "manana", "nombre": "Mañana", "horario": "07:00 a 15:00", "dias": "Lunes a Domingo", "activo": True},
-    {"id": "tarde", "nombre": "Tarde", "horario": "15:00 a 23:00", "dias": "Lunes a Domingo", "activo": True},
-    {"id": "noche", "nombre": "Noche", "horario": "23:00 a 07:00", "dias": "Lunes a Domingo", "activo": True},
-    {"id": "central", "nombre": "Central", "horario": "09:00 a 18:00", "dias": "Lunes a Viernes", "activo": True}
+    {"id": "manana", "nombre": "Mañana", "horario": "07:00 a 15:00", "dias": "Lunes a Domingo", "equipo_id": None, "equipo_nombre": "Toda la Sede", "activo": True},
+    {"id": "tarde", "nombre": "Tarde", "horario": "15:00 a 23:00", "dias": "Lunes a Domingo", "equipo_id": None, "equipo_nombre": "Toda la Sede", "activo": True},
+    {"id": "noche", "nombre": "Noche", "horario": "23:00 a 07:00", "dias": "Lunes a Domingo", "equipo_id": None, "equipo_nombre": "Toda la Sede", "activo": True},
+    {"id": "central", "nombre": "Central", "horario": "09:00 a 18:00", "dias": "Lunes a Viernes", "equipo_id": None, "equipo_nombre": "Toda la Sede", "activo": True}
 ]
 
 class RegionConfig(db.Model):

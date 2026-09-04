@@ -52,8 +52,7 @@ def obtener_config(region_id):
             campos_extra=CAMPOS_EXTRA_DEFAULT,
             turnos_config=TURNOS_DEFAULT
         )
-        db.session.add(config)
-        db.session.commit()
+    equipos = [{'id': eq.id, 'nombre': eq.nombre} for eq in region.equipos.filter_by(activo=True)]
 
     return jsonify({
         'region': {
@@ -61,6 +60,7 @@ def obtener_config(region_id):
             'nombre': region.nombre,
             'codigo': region.codigo
         },
+        'equipos_disponibles': equipos,
         'config': config.to_dict()
     })
 
