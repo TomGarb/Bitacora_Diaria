@@ -511,5 +511,54 @@ class TestBitacoraDOC(unittest.TestCase):
         self.assertEqual(stats_data['equipo_id_activo'], eq_id)
         self.assertEqual(stats_data['equipo_seleccionado']['nombre'], "Equipo Manos Inteligentes y Redes")
 
+    def test_10_actualizaciones_y_subtareas_separadas(self):
+        # 1. Operador 1 crea una tarea general
+        self.login_as(self.operador)
+        r_create = self.client.post('/api/tareas', json={
+            "ticket": "INC-7701",
+            "titulo": "Falla de conectividad en switch de acceso",
+            "cliente": "Banco Nacional",
+            "tipo_tarea": "manos_remotas",
+            "estado": "pendiente",
+            "descripcion": "Puerto Gigabit 0/1 sin link físico."
+        })
+        self.assertEqual(r_create.status_code, 201)
+        tarea_id = r_create.get_json()['tarea']['id']
+
+        # 2. Operador 2 (compañero) agrega una NOTA / ACTUALIZACIÓN (sin ticket requerido)
+        self.login_as(self.operador2)
+        r_act = self.client.post(f'/api/tareas/{tarea_id}/actualizaciones', json={
+            "descripcion": "Operador 2: Se testeó el patchcord con reflectómetro. Cable dañado, se procede al reemplazo.",
+            "estado": "en_progreso"
+        })
+        self.assertEqual(r_act.status_code, 201)
+        act_data = r_act.get_json()
+        self.assertEqual(act_data['entrada']['tipo_entrada'], 'actualizacion')
+        self.assertIsNone(act_data['entrada']['ticket'])
+        self.assertEqual(act_data['tarea_estado'], 'en_progreso')
+
+        # 3. Operador 2 agrega una SUBTAREA con Ticket
+        r_sub = self.client.post(f'/api/tareas/{tarea_id}/subtareas', json={
+            "tipo_entrada": "subtarea",
+            "ticket": "SUB-7701-A",
+            "titulo": "Reetiquetado y certificación de nuevo patchcord",
+            "estado": "completada",
+            "descripcion": "Patchcord Cat6A certificado con Fluke."
+        })
+        self.assertEqual(r_sub.status_code, 201)
+        sub_data = r_sub.get_json()
+        self.assertEqual(sub_data['entrada']['tipo_entrada'], 'subtarea')
+        self.assertEqual(sub_data['entrada']['ticket'], 'SUB-7701-A')
+
+        # 4. Consultar detalle de tarea y verificar que separa ambas colecciones
+        r_get = self.client.get(f'/api/tareas/{tarea_id}')
+        self.assertEqual(r_get.status_code, 200)
+        t_data = r_get.get_json()
+        self.assertEqual(len(t_data['actualizaciones']), 1)
+        self.assertEqual(len(t_data['subtareas']), 1)
+        self.assertEqual(t_data['actualizaciones'][0]['descripcion'], "Operador 2: Se testeó el patchcord con reflectómetro. Cable dañado, se procede al reemplazo.")
+        self.assertEqual(t_data['subtareas'][0]['ticket'], 'SUB-7701-A')
+        self.assertEqual(t_data['estado'], 'en_progreso')
+
 if __name__ == '__main__':
     unittest.main()

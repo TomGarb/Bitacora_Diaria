@@ -17,7 +17,8 @@ def seed():
     with app.app_context():
         print(">> Iniciando creacion de datos iniciales (Seed Data)...")
         
-        # Asegurar creación de tablas
+        # Asegurar creación y refresco de tablas
+        db.drop_all()
         db.create_all()
 
         # 1. Crear Regiones
@@ -283,22 +284,35 @@ def seed():
         db.session.add_all([t1, t2, t3, t4, t5, t6, t7])
         db.session.flush()
 
-        # Subtareas con comentarios
+        # Subtareas y Notas de Seguimiento de ejemplo
         sub1 = Subtarea(
             tarea_id=t7.id,
+            operador_id=op_user.id,
+            tipo_entrada="subtarea",
             ticket="BKP-4012-A",
             titulo="Verificacion de espacio en Storage SAN",
             estado="completada",
-            descripcion="Operador: Espacio libre verificado: 14.2 TB disponibles sin alarmas."
+            descripcion="Operador Buenos Aires: Espacio libre verificado: 14.2 TB disponibles sin alarmas."
         )
         sub2 = Subtarea(
             tarea_id=t7.id,
+            operador_id=op_user.id,
+            tipo_entrada="subtarea",
             ticket="BKP-4012-B",
             titulo="Ejecucion de job de volcado RMAN",
             estado="en_progreso",
-            descripcion="Operador: Job iniciado a las 08:30 con 6 canales paralelos, velocidad 420MB/s."
+            descripcion="Operador Buenos Aires: Job iniciado a las 08:30 con 6 canales paralelos, velocidad 420MB/s."
         )
-        db.session.add_all([sub1, sub2])
+        act1 = Subtarea(
+            tarea_id=t7.id,
+            operador_id=sup_user.id,
+            tipo_entrada="actualizacion",
+            ticket=None,
+            titulo="Nota de Seguimiento de Guardia",
+            estado="en_progreso",
+            descripcion="Supervisor: Se verifica con el cliente Telecom que la ventana de backup se extiende hasta las 17:00."
+        )
+        db.session.add_all([sub1, sub2, act1])
 
         # 5. Feedbacks de prueba
         print("5. Verificando Feedbacks de ejemplo...")

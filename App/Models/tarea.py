@@ -33,6 +33,7 @@ class Tarea(db.Model):
     subtareas = db.relationship('Subtarea', back_populates='tarea', lazy='dynamic', cascade='all, delete-orphan')
 
     def to_dict(self, include_subtareas=True):
+        from App.Models.subtarea import Subtarea
         data = {
             'id': self.id,
             'bitacora_id': self.bitacora_id,
@@ -51,10 +52,14 @@ class Tarea(db.Model):
             'campos_extra': self.campos_extra or {},
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if self.created_at else None,
             'updated_at': self.updated_at.strftime('%Y-%m-%d %H:%M:%S') if self.updated_at else None,
-            'total_subtareas': self.subtareas.count() if self.id else 0
+            'total_subtareas': self.subtareas.filter(Subtarea.tipo_entrada != 'actualizacion').count() if self.id else 0,
+            'total_actualizaciones': self.subtareas.filter_by(tipo_entrada='actualizacion').count() if self.id else 0
         }
         if include_subtareas:
-            data['subtareas'] = [s.to_dict() for s in self.subtareas.all()]
+            all_entries = [s.to_dict() for s in self.subtareas.order_by(Subtarea.id.asc()).all()]
+            data['subtareas'] = [s for s in all_entries if s.get('tipo_entrada') != 'actualizacion']
+            data['actualizaciones'] = [s for s in all_entries if s.get('tipo_entrada') == 'actualizacion']
+            data['todas_las_entradas'] = all_entries
         return data
 
     def __repr__(self):

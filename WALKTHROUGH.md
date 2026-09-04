@@ -164,6 +164,13 @@ Módulo exclusivo para proyectar en monitores y Smart TVs de los centros de oper
   - Barra de pestañas dinámicas en la parte superior: `[ Consolidado Sede ]`, `[ Equipo A ]`, `[ Equipo B ]`, etc.
   - Al cambiar de pestaña, los KPIs (*Total de Tareas, Completadas, En Progreso, Eficiencia %*), las barras de distribución por tipo de actividad y la tabla de tareas recientes se recalculan en tiempo real según los miembros del equipo seleccionado.
 
+### M. Módulo de Actualizaciones del Caso vs Subtareas con Ticket
+- **Separación de Vistas y Entradas en Casos:**
+  - **Pestaña 1: Actualizaciones / Notas de Seguimiento:** Permite a cualquier compañero de guardia agregar novedades, evolución técnica o comentarios de avance **sin necesidad de pedir un número de ticket**. Registra autor (`operador_nombre`), fecha/hora y permite cambiar el estado del caso opcionalmente.
+  - **Pestaña 2: Subtareas Asignadas:** Administra subtareas formales que **sí requieren su propio ticket independiente**, título, estado y detalle técnico.
+- **Exclusión de Credenciales Especiales:** Las altas de credenciales especiales quedan exentas de este panel de subtareas, manejando su propio submódulo exclusivo de personas y códigos alfanuméricos.
+- **Renderizado en Reporte de Mail ([`/mail-preview`](file:///c:/Users/Tomas/Desktop/Code/Bitacora%20Centro%20Operaciones/App/Templates/mail_preview.html)):** En las tablas de resumen se listan tanto las notas cronológicas de seguimiento como las subtareas asignadas de cada caso.
+
 ---
 
 ## 3. Cuentas de Acceso Preconfiguradas

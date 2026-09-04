@@ -84,7 +84,7 @@ async function cargarVistaPreviaMail(bitacoraId = '') {
       tbodyCasos.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#64748b;">No hay tareas generales en este turno</td></tr>';
     } else {
       sec.casos_operador.forEach(t => {
-        let subHtml = renderSubtareasInline(t.subtareas);
+        let subHtml = renderSubtareasInline(t);
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td><strong style="color:#2563eb;">${t.ticket}</strong></td>
@@ -293,12 +293,28 @@ async function cargarVistaPreviaMail(bitacoraId = '') {
   }
 }
 
-function renderSubtareasInline(subtareas = []) {
-  if (!subtareas || subtareas.length === 0) return '';
-  let html = '<div style="margin-top:4px; padding-left:6px; border-left:2px solid #cbd5e1; font-size:0.75rem; color:#475569;">';
-  subtareas.forEach(s => {
-    html += `<div>• <strong>${s.ticket}:</strong> ${s.titulo} [${s.estado}] ${s.descripcion ? '- ' + s.descripcion : ''}</div>`;
-  });
+function renderSubtareasInline(tarea = {}) {
+  const subtareas = tarea.subtareas || [];
+  const actuals = tarea.actualizaciones || [];
+  
+  if (subtareas.length === 0 && actuals.length === 0) return '';
+  
+  let html = '<div style="margin-top:6px; padding-left:8px; border-left:2px solid #94a3b8; font-size:0.75rem; color:#475569;">';
+  
+  if (actuals.length > 0) {
+    html += '<div style="font-weight:700; color:#0284c7; margin-bottom:2px;">Notas de Seguimiento:</div>';
+    actuals.forEach(a => {
+      html += `<div style="margin-bottom:2px;">• <span style="color:#0f172a; font-weight:600;">[${a.operador_nombre || 'Operador'} - ${a.created_at || ''}]:</span> ${a.descripcion} ${a.estado ? '<span style="font-size:0.7rem; color:#0284c7;">(' + a.estado + ')</span>' : ''}</div>`;
+    });
+  }
+
+  if (subtareas.length > 0) {
+    html += '<div style="font-weight:700; color:#7c3aed; margin-top:4px; margin-bottom:2px;">Subtareas Asignadas:</div>';
+    subtareas.forEach(s => {
+      html += `<div style="margin-bottom:2px;">• <strong>${s.ticket}:</strong> ${s.titulo} [${s.estado}] ${s.descripcion ? '- ' + s.descripcion : ''}</div>`;
+    });
+  }
+
   html += '</div>';
   return html;
 }

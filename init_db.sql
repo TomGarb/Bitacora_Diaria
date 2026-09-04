@@ -95,14 +95,16 @@ CREATE TABLE IF NOT EXISTS tareas (
     updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Subtareas
+-- Subtareas y Actualizaciones / Notas de Seguimiento
 CREATE TABLE IF NOT EXISTS subtareas (
     id SERIAL PRIMARY KEY,
     tarea_id INTEGER NOT NULL REFERENCES tareas(id) ON DELETE CASCADE,
-    ticket VARCHAR(80) NOT NULL,
-    titulo VARCHAR(200) NOT NULL,
-    estado VARCHAR(30) NOT NULL DEFAULT 'pendiente',
-    descripcion TEXT,
+    operador_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+    tipo_entrada VARCHAR(30) NOT NULL DEFAULT 'subtarea', -- 'subtarea' o 'actualizacion'
+    ticket VARCHAR(80), -- Opcional / nulo para actualizaciones sin ticket
+    titulo VARCHAR(200),
+    estado VARCHAR(30) DEFAULT 'pendiente',
+    descripcion TEXT NOT NULL,
     created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

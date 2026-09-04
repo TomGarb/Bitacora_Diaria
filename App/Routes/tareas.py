@@ -228,16 +228,32 @@ def crear_tarea():
     db.session.add(nueva_tarea)
     db.session.flush()
 
-    # Procesar subtareas opcionales enviadas en la creación
+    # Procesar subtareas y actualizaciones iniciales opcionales
     subtareas_data = data.get('subtareas', [])
     for sub in subtareas_data:
-        if sub.get('ticket') and sub.get('titulo'):
+        tipo_ent = sub.get('tipo_entrada', 'subtarea')
+        desc = sub.get('descripcion', '').strip()
+        
+        if tipo_ent == 'actualizacion' and desc:
             nueva_sub = Subtarea(
                 tarea_id=nueva_tarea.id,
+                operador_id=user.id,
+                tipo_entrada='actualizacion',
+                ticket=None,
+                titulo=sub.get('titulo', '').strip() or 'Nota Inicial',
+                estado=sub.get('estado', nueva_tarea.estado),
+                descripcion=desc
+            )
+            db.session.add(nueva_sub)
+        elif sub.get('ticket') and sub.get('titulo'):
+            nueva_sub = Subtarea(
+                tarea_id=nueva_tarea.id,
+                operador_id=user.id,
+                tipo_entrada='subtarea',
                 ticket=sub.get('ticket').strip(),
                 titulo=sub.get('titulo').strip(),
                 estado=sub.get('estado', 'pendiente'),
-                descripcion=sub.get('descripcion', '').strip()
+                descripcion=desc
             )
             db.session.add(nueva_sub)
 
