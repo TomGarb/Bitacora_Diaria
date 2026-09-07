@@ -1,6 +1,5 @@
 from flask import Blueprint, request, jsonify
-from datetime import datetime
-from App.extensions import db
+from App.extensions import db, utc_now
 from App.auth import login_required, get_current_user
 from App.Models.tarea import Tarea, ESTADOS_TAREA
 from App.Models.subtarea import Subtarea
@@ -42,7 +41,7 @@ def crear_subtarea_o_actualizacion(tarea_id):
         # Actualizar estado de la tarea matriz si se especificó
         if nuevo_estado and nuevo_estado in ESTADOS_TAREA:
             tarea.estado = nuevo_estado
-            tarea.updated_at = datetime.utcnow()
+            tarea.updated_at = utc_now()
 
         db.session.commit()
 
@@ -91,7 +90,7 @@ def actualizar_subtarea(subtarea_id):
     if 'estado' in data: subtarea.estado = data['estado']
     if 'descripcion' in data: subtarea.descripcion = data['descripcion'].strip()
 
-    subtarea.updated_at = datetime.utcnow()
+    subtarea.updated_at = utc_now()
     db.session.commit()
 
     return jsonify({

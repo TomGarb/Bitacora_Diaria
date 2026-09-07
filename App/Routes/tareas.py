@@ -1,6 +1,6 @@
 from datetime import datetime, date
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
-from App.extensions import db
+from App.extensions import db, utc_now
 from App.auth import login_required, get_current_user
 from App.Models.tarea import Tarea, ESTADOS_TAREA
 from App.Models.subtarea import Subtarea
@@ -322,7 +322,7 @@ def actualizar_tarea(tarea_id):
         current_extra.update(data['campos_extra'])
         tarea.campos_extra = current_extra
 
-    tarea.updated_at = datetime.utcnow()
+    tarea.updated_at = utc_now()
     db.session.commit()
 
     return jsonify({

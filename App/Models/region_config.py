@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from App.extensions import db
+from App.extensions import db, utc_now
 
 # Catálogo maestro de todos los tipos de tareas estándar disponibles en el sistema
 TIPOS_TAREA_DEFAULT = [
@@ -92,7 +92,7 @@ class RegionConfig(db.Model):
         "notificaciones_activas": True
     })
     
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
 
     # Relación
     region = db.relationship('Region', back_populates='config')

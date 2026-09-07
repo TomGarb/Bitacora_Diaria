@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify
 from datetime import datetime
-from App.extensions import db
+from App.extensions import db, utc_now
 from App.auth import login_required, get_current_user, sub_admin_required
 from App.Models.feedback import Feedback, TIPOS_FEEDBACK, ESTADOS_FEEDBACK
 from App.Models.region import Region
@@ -95,7 +95,7 @@ def responder_feedback(feedback_id):
     if 'respuesta_admin' in data:
         fb.respuesta_admin = data['respuesta_admin'].strip()
 
-    fb.updated_at = datetime.utcnow()
+    fb.updated_at = utc_now()
     db.session.commit()
 
     return jsonify({

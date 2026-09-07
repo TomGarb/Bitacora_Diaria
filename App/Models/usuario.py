@@ -1,6 +1,6 @@
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
-from App.extensions import db
+from App.extensions import db, utc_now
 
 class Usuario(db.Model):
     __tablename__ = 'usuarios'
@@ -14,7 +14,7 @@ class Usuario(db.Model):
     region_id = db.Column(db.Integer, db.ForeignKey('regiones.id', ondelete='SET NULL'), nullable=True)
     keycloak_sub = db.Column(db.String(100), unique=True, nullable=True) # Preparado para Keycloak ID
     activo = db.Column(db.Boolean, default=True, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utc_now)
 
     # Relaciones
     region = db.relationship('Region', back_populates='usuarios')

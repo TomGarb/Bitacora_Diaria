@@ -1,6 +1,6 @@
 from datetime import datetime, date, timezone
 from flask import Blueprint, render_template, jsonify, request
-from App.extensions import db
+from App.extensions import db, utc_now
 from App.Models.region import Region
 from App.Models.bitacora import Bitacora
 from App.Models.tarea import Tarea
@@ -129,7 +129,7 @@ def api_tv_credenciales(region_id):
     ).order_by(Tarea.id.desc()).all()
 
     credenciales = []
-    ahora = datetime.utcnow()
+    ahora = utc_now()
 
     for t in tareas:
         campos = t.campos_extra or {}
@@ -216,7 +216,7 @@ def api_tv_planificadas(region_id):
         )
     ).all()
 
-    ahora = datetime.utcnow()
+    ahora = utc_now()
     planificadas = []
 
     for t in tareas:

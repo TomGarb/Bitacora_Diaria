@@ -1,5 +1,5 @@
 from datetime import datetime
-from App.extensions import db
+from App.extensions import db, utc_now
 
 ESTADOS_TAREA = ['pendiente', 'en_progreso', 'completada', 'cancelada']
 
@@ -24,8 +24,8 @@ class Tarea(db.Model):
     # Campos extra dinámicos en formato JSON (ej: alta_credencial_especial: persona_propietaria, ticket_cliente, codigo_alfanumerico)
     campos_extra = db.Column(db.JSON, nullable=False, default=dict)
 
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utc_now)
+    updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
 
     # Relaciones
     bitacora = db.relationship('Bitacora', back_populates='tareas')

@@ -1,5 +1,5 @@
 from datetime import datetime
-from App.extensions import db
+from App.extensions import db, utc_now
 
 class Subtarea(db.Model):
     __tablename__ = 'subtareas'
@@ -12,8 +12,8 @@ class Subtarea(db.Model):
     titulo = db.Column(db.String(200), nullable=True)
     estado = db.Column(db.String(30), nullable=True, default='pendiente') # 'pendiente', 'en_progreso', 'completada', 'cancelada'
     descripcion = db.Column(db.Text, nullable=False) # Contenido de la actualización o detalle de la subtarea
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utc_now)
+    updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
 
     # Relaciones
     tarea = db.relationship('Tarea', back_populates='subtareas')

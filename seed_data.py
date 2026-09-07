@@ -2,7 +2,7 @@ import os
 import sys
 from datetime import datetime, date, timedelta
 from App import create_app
-from App.extensions import db
+from App.extensions import db, utc_now
 from App.Models.usuario import Usuario
 from App.Models.region import Region
 from App.Models.region_config import RegionConfig, TIPOS_TAREA_DEFAULT, CAMPOS_EXTRA_DEFAULT, TURNOS_DEFAULT, SALAS_DEFAULT
@@ -152,7 +152,7 @@ def seed():
         print("4. Verificando Tareas y Subtareas de ejemplo...")
         op_user = usuarios_creados["op_buenosaires"]
         sup_user = usuarios_creados["supervisor_ar"]
-        ahora = datetime.utcnow()
+        ahora = utc_now()
         
         # Limpiar tareas previas para recrear con el esquema enriquecido
         Tarea.query.filter_by(bitacora_id=bitacora_hoy.id).delete()

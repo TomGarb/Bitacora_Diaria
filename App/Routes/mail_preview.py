@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from flask import Blueprint, render_template, request, jsonify
-from App.extensions import db
+from App.extensions import db, utc_now
 from App.auth import login_required, get_current_user
 from App.Models.bitacora import Bitacora
 from App.Models.tarea import Tarea
@@ -142,6 +142,6 @@ def get_mail_data():
             'tareas_extras': tareas_extras
         },
         'generado_por': user.nombre_completo,
-        'generado_en': datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC'),
+        'generado_en': utc_now().strftime('%Y-%m-%d %H:%M:%S UTC'),
         'es_vista_operador': (user.rol == 'operador')
     })

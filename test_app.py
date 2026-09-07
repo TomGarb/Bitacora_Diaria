@@ -766,6 +766,123 @@ class TestBitacoraDOC(unittest.TestCase):
         adm_tickets = [t['ticket'] for t in res_adm.get_json()]
         self.assertIn('REM-HST-99', adm_tickets)
 
+    def test_13_operador_modificar_salas_dc(self):
+        # 1. Operador normal accede a la vista /salas
+        self.login_as(self.operador)
+        r_view = self.client.get('/salas')
+        self.assertEqual(r_view.status_code, 200)
+
+        # 2. Operador modifica las salas de su propio Datacenter
+        nuevas_salas = ["Sala A - Mainframe", "Sala B - Telecom", "Meet-Me Room 01", "Almacén Racks"]
+        r_put = self.client.put(f'/api/config/{self.region.id}/salas', json={
+            "salas_datacenter": nuevas_salas
+        })
+        self.assertEqual(r_put.status_code, 200)
+        data_res = r_put.get_json()
+        self.assertEqual(data_res['salas_datacenter'], nuevas_salas)
+
+        # Verificar persistencia en configuración de la región
+        cfg = RegionConfig.query.filter_by(region_id=self.region.id).first()
+        self.assertEqual(cfg.salas_datacenter, nuevas_salas)
+
+        # 3. Operador intenta modificar salas de otra región (aislamiento regional)
+        r2 = Region(nombre="DC Montevideo", codigo="UY-MVD", activa=True)
+        db.session.add(r2)
+        db.session.commit()
+
+        r_hack = self.client.put(f'/api/config/{r2.id}/salas', json={
+            "salas_datacenter": ["Sala Hackeada"]
+        })
+        self.assertEqual(r_hack.status_code, 403)
+
+    def test_14_perfil_usuario_info_completa_y_casos_normales(self):
+        # 1. Asignar operador y operador2 a un equipo de trabajo
+        self.login_as(self.supervisor)
+        r_eq = self.client.post('/api/equipos', json={
+            "nombre": "Equipo Datacenter Alfa",
+            "descripcion": "Operadores de guardia en sala fría",
+            "miembros_ids": [self.operador.id, self.operador2.id]
+        })
+        self.assertEqual(r_eq.status_code, 201)
+
+        # Crear bitacora activa
+        b_hoy = Bitacora(region_id=self.region.id, fecha=date.today(), turno="manana", estado="abierta")
+        db.session.add(b_hoy)
+        db.session.flush()
+
+        # 2. Crear tareas para self.operador:
+        # a) Casos normales no planificados (deben sumar a total_casos_normales)
+        t_normal_1 = Tarea(
+            bitacora_id=b_hoy.id, operador_id=self.operador.id, tipo_tarea="manos_inteligentes",
+            ticket="RH-NORM-01", titulo="Cableado patchcord", cliente="Cliente X", estado="en_progreso",
+            descripcion="Tendido de fibra", es_actividad_programada=False
+        )
+        t_normal_2 = Tarea(
+            bitacora_id=b_hoy.id, operador_id=self.operador.id, tipo_tarea="virtualizacion",
+            ticket="VM-NORM-02", titulo="Deploy VM Debian", cliente="Cliente Y", estado="completada",
+            descripcion="Creación de VM", es_actividad_programada=False
+        )
+        # b) Caso normal PERO PLANIFICADO (NO debe sumar)
+        t_planificada = Tarea(
+            bitacora_id=b_hoy.id, operador_id=self.operador.id, tipo_tarea="manos_remotas",
+            ticket="RH-PLAN-03", titulo="Upgrade switch programado", cliente="Cliente Z", estado="pendiente",
+            descripcion="Upgrade", es_actividad_programada=True,
+            fecha_programada_inicio=datetime.now(timezone.utc),
+            fecha_programada_fin=datetime.now(timezone.utc) + timedelta(hours=2)
+        )
+        # c) Credencial especial (NO debe sumar)
+        t_cred = Tarea(
+            bitacora_id=b_hoy.id, operador_id=self.operador.id, tipo_tarea="alta_credencial_especial",
+            ticket="CRD-NORM-04", titulo="Credencial Proveedor", cliente="Cliente W", estado="completada",
+            descripcion="Credencial", es_actividad_programada=True
+        )
+        # d) Tarea de otro operador (NO debe sumar)
+        t_otro_op = Tarea(
+            bitacora_id=b_hoy.id, operador_id=self.operador2.id, tipo_tarea="manos_inteligentes",
+            ticket="RH-OP2-05", titulo="Tarea de compañero", cliente="Cliente V", estado="completada",
+            descripcion="Tarea de op 2", es_actividad_programada=False
+        )
+        db.session.add_all([t_normal_1, t_normal_2, t_planificada, t_cred, t_otro_op])
+        db.session.commit()
+
+        # 3. Login como operador y consultar perfil
+        self.login_as(self.operador)
+
+        # GET vista /perfil
+        r_perfil_view = self.client.get('/perfil')
+        self.assertEqual(r_perfil_view.status_code, 200)
+
+        # GET API /api/perfil/equipo
+        r_api = self.client.get('/api/perfil/equipo')
+        self.assertEqual(r_api.status_code, 200)
+        data = r_api.get_json()
+
+        # Verificar datos de usuario y sitio
+        self.assertEqual(data['usuario']['username'], self.operador.username)
+        self.assertEqual(data['usuario']['email'], self.operador.email)
+        self.assertEqual(data['sitio'], self.region.nombre)
+        self.assertEqual(data['sitio_codigo'], self.region.codigo)
+
+        # Verificar KPI total_casos_normales (exactamente 2)
+        self.assertEqual(data['total_casos_normales'], 2)
+
+        # Verificar Supervisores
+        supervisores_nombres = [s['nombre_completo'] for s in data['supervisores']]
+        self.assertIn(self.supervisor.nombre_completo, supervisores_nombres)
+
+        # Verificar Compañeros de la Sede (Sitio)
+        comp_sitio_ids = [c['id'] for c in data['companeros_sitio']]
+        self.assertIn(self.operador2.id, comp_sitio_ids)
+        self.assertNotIn(self.operador.id, comp_sitio_ids) # No debe incluirse a sí mismo
+
+        # Verificar Equipos asignados y Compañeros por Equipo
+        mis_equipos = data['mis_equipos']
+        self.assertEqual(len(mis_equipos), 1)
+        self.assertEqual(mis_equipos[0]['nombre'], "Equipo Datacenter Alfa")
+        comp_equipo_ids = [m['id'] for m in mis_equipos[0]['companeros_equipo']]
+        self.assertIn(self.operador2.id, comp_equipo_ids)
+        self.assertNotIn(self.operador.id, comp_equipo_ids)
+
 if __name__ == '__main__':
     unittest.main()
 

@@ -24,29 +24,38 @@
         <span class="user-role-badge role-{{ user.rol }}">{{ user.rol }}</span>
       </div>
       <div>
-        <i class="bi bi-geo-alt"></i> <strong>Sede / Región:</strong> {{ region.nombre if region else 'Global' }}
+        <i class="bi bi-geo-alt"></i> <strong>Sitio / Datacenter:</strong> {{ region.nombre if region else 'Global' }}
       </div>
     </div>
 
     <!-- Grupos/Equipos del Usuario -->
     <div id="mis-equipos-container" style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
-      <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;"><i class="bi bi-people-fill"></i> Grupos Asignados:</span>
+      <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;"><i class="bi bi-people-fill"></i> Equipos Asignados:</span>
       <span id="mis-equipos-badges" style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
-        <span class="badge" style="background: rgba(148, 163, 184, 0.15); color: var(--text-muted);">Cargando grupos...</span>
+        <span class="badge" style="background: rgba(148, 163, 184, 0.15); color: var(--text-muted);">Cargando equipos...</span>
       </span>
+    </div>
+  </div>
+
+  <!-- KPI: Total de Casos Normales (No planificados) -->
+  <div class="profile-stat-box" title="Casos operativos normales no planificados cargados por el usuario">
+    <div class="profile-stat-number" id="stat-casos-normales">{{ total_casos_normales }}</div>
+    <div class="profile-stat-label">
+      <i class="bi bi-tools"></i> Total Casos Normales<br>
+      <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: normal;">(No planificados)</span>
     </div>
   </div>
 </div>
 
-<!-- SECCIÓN: MIS EQUIPOS / GRUPOS DE TRABAJO -->
+<!-- SECCIÓN: MIS EQUIPOS / GRUPOS DE TRABAJO Y COMPAÑEROS POR EQUIPO -->
 <div class="card" style="margin-bottom: 1.5rem;">
   <div class="card-header">
     <div class="card-title">
-      <i class="bi bi-diagram-3-fill"></i> Mis Grupos de Trabajo en {{ region.nombre if region else 'Datacenter' }}
+      <i class="bi bi-diagram-3-fill"></i> Equipos de Trabajo Asignados y Compañeros por Equipo
     </div>
   </div>
   <div class="card-body">
-    <div id="equipos-cards-grid" class="team-grid">
+    <div id="equipos-cards-container">
       <div style="color: var(--text-muted); font-size: 0.85rem;">Cargando grupos de trabajo...</div>
     </div>
   </div>

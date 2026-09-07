@@ -2,17 +2,27 @@
 __pycache__/
 *.py[cod]
 *$py.class
-*.env
+.pytest_cache/
 .venv/
 env/
 venv/
 ENV/
 
-# Base de datos SQLite local de pruebas
+# Variables de entorno y secretos locales
+.env
+*.env
+.env.*
+!.env.example
+
+# Base de datos SQLite local de pruebas y desarrollo
 *.db
 *.sqlite3
+*.db-journal
 
-# IDEs
+# IDEs, editores y sistema operativo
 .vscode/
 .idea/
 *.swp
+*.log
+.DS_Store
+Thumbs.db

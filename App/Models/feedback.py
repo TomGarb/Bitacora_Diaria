@@ -1,5 +1,5 @@
 from datetime import datetime
-from App.extensions import db
+from App.extensions import db, utc_now
 
 TIPOS_FEEDBACK = ['error_sistema', 'modificacion_tarea', 'sugerencia_mejora', 'otro']
 ESTADOS_FEEDBACK = ['pendiente', 'en_revision', 'resuelto', 'descartado']
@@ -15,8 +15,8 @@ class Feedback(db.Model):
     mensaje = db.Column(db.Text, nullable=False)
     estado = db.Column(db.String(30), nullable=False, default='pendiente') # pendiente, en_revision, resuelto, descartado
     respuesta_admin = db.Column(db.Text, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utc_now)
+    updated_at = db.Column(db.DateTime, default=utc_now, onupdate=utc_now)
 
     # Relaciones
     usuario = db.relationship('Usuario', backref=db.backref('feedbacks_enviados', lazy='dynamic'))

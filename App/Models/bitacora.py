@@ -1,5 +1,5 @@
 from datetime import datetime, date
-from App.extensions import db
+from App.extensions import db, utc_now
 
 class Bitacora(db.Model):
     __tablename__ = 'bitacoras'
@@ -11,7 +11,7 @@ class Bitacora(db.Model):
     estado = db.Column(db.String(20), nullable=False, default='abierta') # 'abierta', 'cerrada'
     supervisor_id = db.Column(db.Integer, db.ForeignKey('usuarios.id', ondelete='SET NULL'), nullable=True)
     observaciones_cierre = db.Column(db.Text, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utc_now)
     closed_at = db.Column(db.DateTime, nullable=True)
 
     # Relaciones

@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
 from datetime import datetime
-from App.extensions import db
+from App.extensions import db, utc_now
 from App.auth import login_required, sub_admin_required, get_current_user
 from App.Models.region import Region
 from App.Models.region_config import RegionConfig, TIPOS_TAREA_DEFAULT, CAMPOS_EXTRA_DEFAULT, TURNOS_DEFAULT
@@ -111,7 +111,7 @@ def guardar_config(region_id):
         current_ui.update(data['config_ui'])
         config.config_ui = current_ui
 
-    config.updated_at = datetime.utcnow()
+    config.updated_at = utc_now()
     db.session.commit()
 
     return jsonify({
@@ -119,3 +119,59 @@ def guardar_config(region_id):
         'message': f'Configuración de la región "{region.nombre}" actualizada en caliente con éxito.',
         'config': config.to_dict()
     })
+
+@config_region_bp.route('/salas')
+@login_required
+def salas_view():
+    user = get_current_user()
+    region_id = user.region_id
+    if not region_id:
+        primera = Region.query.filter_by(activa=True).first()
+        region_id = primera.id if primera else 1
+
+    region = db.get_or_404(Region, region_id)
+    regiones_disponibles = Region.query.filter_by(activa=True).all() if user.is_admin() else [region]
+    
+    config = region.config
+    salas = config.salas_datacenter if config else []
+
+    return render_template(
+        'salas_dc.html',
+        user=user,
+        region=region,
+        regiones=regiones_disponibles,
+        salas=salas
+    )
+
+@config_region_bp.route('/api/config/<int:region_id>/salas', methods=['PUT'])
+@login_required
+def guardar_salas(region_id):
+    user = get_current_user()
+    if not user.is_admin() and user.region_id != region_id:
+        return jsonify({'error': 'No tiene permisos para modificar las salas de otra región'}), 403
+
+    region = db.get_or_404(Region, region_id)
+    config = region.config
+    if not config:
+        config = RegionConfig(region_id=region.id)
+        db.session.add(config)
+
+    data = request.get_json() or {}
+    if 'salas_datacenter' not in data or not isinstance(data['salas_datacenter'], list):
+        return jsonify({'error': 'Debe proporcionar una lista en salas_datacenter'}), 400
+
+    # Filtrar nombres vacíos
+    salas_limpias = [s.strip() for s in data['salas_datacenter'] if isinstance(s, str) and s.strip()]
+    if not salas_limpias:
+        return jsonify({'error': 'Debe existir al menos una sala o sitio en el Datacenter'}), 400
+
+    config.salas_datacenter = salas_limpias
+    config.updated_at = utc_now()
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'message': f'Salas del Datacenter "{region.nombre}" actualizadas exitosamente.',
+        'salas_datacenter': config.salas_datacenter
+    })
+

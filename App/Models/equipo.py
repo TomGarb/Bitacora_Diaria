@@ -1,5 +1,5 @@
 from datetime import datetime
-from App.extensions import db
+from App.extensions import db, utc_now
 
 # Tabla intermedia de asociación Muchos a Muchos entre Usuario y Equipo
 usuario_equipos = db.Table(
@@ -20,7 +20,7 @@ class Equipo(db.Model):
     descripcion = db.Column(db.Text, nullable=True)
     region_id = db.Column(db.Integer, db.ForeignKey('regiones.id', ondelete='CASCADE'), nullable=False)
     activo = db.Column(db.Boolean, default=True, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=utc_now, nullable=False)
 
     # Relación con Región
     region = db.relationship('Region', backref=db.backref('equipos', lazy='dynamic', cascade='all, delete-orphan'))

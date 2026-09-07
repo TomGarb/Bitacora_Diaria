@@ -1,5 +1,5 @@
 from datetime import datetime
-from App.extensions import db
+from App.extensions import db, utc_now
 
 class Region(db.Model):
     __tablename__ = 'regiones'
@@ -9,7 +9,7 @@ class Region(db.Model):
     codigo = db.Column(db.String(20), unique=True, nullable=False)
     descripcion = db.Column(db.Text, nullable=True)
     activa = db.Column(db.Boolean, default=True, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utc_now)
 
     # Relaciones
     config = db.relationship('RegionConfig', back_populates='region', uselist=False, cascade='all, delete-orphan')

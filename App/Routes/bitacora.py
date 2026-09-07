@@ -1,6 +1,6 @@
 from datetime import datetime, date
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
-from App.extensions import db
+from App.extensions import db, utc_now
 from App.auth import login_required, sub_admin_required, get_current_user
 from App.Models.bitacora import Bitacora
 from App.Models.region import Region
@@ -122,7 +122,7 @@ def cerrar_bitacora(bitacora_id):
     observaciones = data.get('observaciones_cierre', '').strip()
 
     bitacora.estado = 'cerrada'
-    bitacora.closed_at = datetime.utcnow()
+    bitacora.closed_at = utc_now()
     bitacora.supervisor_id = user.id
     bitacora.observaciones_cierre = observaciones
 
