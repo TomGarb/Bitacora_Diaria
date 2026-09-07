@@ -646,5 +646,126 @@ class TestBitacoraDOC(unittest.TestCase):
         self.assertEqual(r_get_t.status_code, 200)
         self.assertEqual(r_get_t.get_json()['campos_extra']['slot_rack'], 'Slot 04')
 
+    def test_12_historico_casos_endpoints_y_categorias(self):
+        # 1. Crear bitácoras históricas (de días pasados)
+        ayer = date.today() - timedelta(days=2)
+        antier = date.today() - timedelta(days=5)
+
+        b_ayer = Bitacora(region_id=self.region.id, fecha=ayer, turno="tarde", estado="cerrada")
+        b_antier = Bitacora(region_id=self.region.id, fecha=antier, turno="manana", estado="cerrada")
+        db.session.add_all([b_ayer, b_antier])
+        db.session.flush()
+
+        # Crear tareas en cada una de las 8 categorías
+        t_normal = Tarea(
+            bitacora_id=b_antier.id, operador_id=self.operador.id, tipo_tarea="manos_inteligentes",
+            ticket="RH-HST-01", titulo="Reemplazo SFP+", cliente="Cliente A", estado="completada", descripcion="SFP cambiado"
+        )
+        t_personal = Tarea(
+            bitacora_id=b_antier.id, operador_id=self.operador.id, tipo_tarea="acceso_tecnicos",
+            ticket="TEC-HST-01", titulo="Técnico de fibra", cliente="Level 3", estado="completada", descripcion="Empalme ODF",
+            campos_extra={"empresa_tecnico": "Lumen", "sala_datacenter": "Meet-Me Room"}
+        )
+        t_equipos = Tarea(
+            bitacora_id=b_ayer.id, operador_id=self.operador.id, tipo_tarea="acceso_equipos",
+            ticket="EQ-HST-01", titulo="Ingreso Servidor Dell", cliente="Banco B", estado="completada", descripcion="Servidor 2U",
+            campos_extra={"sala_datacenter": "Sala A"}
+        )
+        t_mantenimiento = Tarea(
+            bitacora_id=b_ayer.id, operador_id=self.supervisor.id, tipo_tarea="mantenimiento",
+            ticket="MNT-HST-01", titulo="Corte de grupo electrógeno", cliente="DC Infra", estado="completada", descripcion="Prueba con carga",
+            es_actividad_programada=True, fecha_programada_inicio=datetime.now(timezone.utc) - timedelta(days=2, hours=3),
+            fecha_programada_fin=datetime.now(timezone.utc) - timedelta(days=2, hours=1),
+            campos_extra={"sitio_mantenimiento": "Subestación 1"}
+        )
+        t_credencial = Tarea(
+            bitacora_id=b_antier.id, operador_id=self.operador.id, tipo_tarea="alta_credencial_especial",
+            ticket="CRD-HST-01", titulo="Credencial Auditoría", cliente="Financiera C", estado="completada", descripcion="Acceso auditores",
+            es_actividad_programada=True, fecha_programada_inicio=datetime.now(timezone.utc) - timedelta(days=5, hours=8),
+            fecha_programada_fin=datetime.now(timezone.utc) - timedelta(days=5, hours=2),
+            campos_extra={"ticket_cliente": "TK-AUDIT-99", "credenciales_lista": [{"persona_propietaria": "Ana Gómez", "codigo_alfanumerico": "CRD-ANA-10"}]}
+        )
+        t_externo = Tarea(
+            bitacora_id=b_ayer.id, operador_id=self.operador.id, tipo_tarea="manejo_sitio_externo",
+            ticket="EXT-HST-01", titulo="Enlace Santiago", cliente="Telecom Chile", estado="completada", descripcion="Coordinación NOC",
+            campos_extra={"sitio_externo": "Chile", "cantidad_contactos": 3}
+        )
+        t_nota = Tarea(
+            bitacora_id=b_antier.id, operador_id=self.operador.id, tipo_tarea="nota_de_turno",
+            ticket="NOT-HST-01", titulo="Relevo sin novedades", cliente="Interno", estado="completada", descripcion="Todo en orden durante el turno."
+        )
+        t_extra = Tarea(
+            bitacora_id=b_ayer.id, operador_id=self.operador.id, tipo_tarea="tarea_extra",
+            ticket="EXTR-HST-01", titulo="Ordenamiento de cableado", cliente="DC Ops", estado="completada", descripcion="Peinado de cables en Rack 14"
+        )
+
+        db.session.add_all([t_normal, t_personal, t_equipos, t_mantenimiento, t_credencial, t_externo, t_nota, t_extra])
+        db.session.commit()
+
+        # 2. Test vista HTML /historico
+        self.login_as(self.operador)
+        res_view = self.client.get('/historico')
+        self.assertEqual(res_view.status_code, 200)
+
+        # 3. Test API /api/historico general
+        res_api = self.client.get('/api/historico')
+        self.assertEqual(res_api.status_code, 200)
+        items = res_api.get_json()
+        self.assertGreaterEqual(len(items), 8)
+
+        # 4. Test filtrado por categoría individual
+        res_cred = self.client.get('/api/historico?categoria=credenciales')
+        self.assertEqual(res_cred.status_code, 200)
+        cred_items = res_cred.get_json()
+        self.assertTrue(all(c['tipo_tarea'] == 'alta_credencial_especial' for c in cred_items))
+        self.assertTrue(any(c['ticket'] == 'CRD-HST-01' for c in cred_items))
+
+        res_mnt = self.client.get('/api/historico?categoria=mantenimientos')
+        self.assertEqual(res_mnt.status_code, 200)
+        mnt_items = res_mnt.get_json()
+        self.assertTrue(all(m['tipo_tarea'] == 'mantenimiento' for m in mnt_items))
+
+        # 5. Test filtro de fechas
+        res_rango = self.client.get(f'/api/historico?fecha_desde={ayer.strftime("%Y-%m-%d")}&fecha_hasta={ayer.strftime("%Y-%m-%d")}')
+        self.assertEqual(res_rango.status_code, 200)
+        rango_items = res_rango.get_json()
+        tickets_rango = [t['ticket'] for t in rango_items]
+        self.assertIn('EQ-HST-01', tickets_rango)
+        self.assertNotIn('RH-HST-01', tickets_rango) # Pertenece a antier
+
+        # 6. Test Exportación a CSV
+        res_csv = self.client.get('/api/historico?export=csv')
+        self.assertEqual(res_csv.status_code, 200)
+        self.assertIn('text/csv', res_csv.content_type)
+        csv_text = res_csv.data.decode('utf-8-sig')
+        self.assertIn('CRD-HST-01', csv_text)
+        self.assertIn('RH-HST-01', csv_text)
+
+        # 7. Test Aislamiento Regional en histórico
+        r2 = Region(nombre="Sede Remota", codigo="RM-02", activa=True)
+        db.session.add(r2)
+        db.session.flush()
+        b_r2 = Bitacora(region_id=r2.id, fecha=date.today(), turno="manana", estado="cerrada")
+        db.session.add(b_r2)
+        db.session.flush()
+        t_r2 = Tarea(
+            bitacora_id=b_r2.id, operador_id=self.operador.id, tipo_tarea="manos_remotas",
+            ticket="REM-HST-99", titulo="Tarea en Sede Remota", cliente="Cli R2", estado="completada", descripcion="desc"
+        )
+        db.session.add(t_r2)
+        db.session.commit()
+
+        # Operador de region 1 no debe ver la tarea de region 2
+        res_op = self.client.get('/api/historico')
+        op_tickets = [t['ticket'] for t in res_op.get_json()]
+        self.assertNotIn('REM-HST-99', op_tickets)
+
+        # Admin global sí puede consultarla o filtrar por region 2
+        self.login_as(self.admin)
+        res_adm = self.client.get(f'/api/historico?region_id={r2.id}')
+        adm_tickets = [t['ticket'] for t in res_adm.get_json()]
+        self.assertIn('REM-HST-99', adm_tickets)
+
 if __name__ == '__main__':
     unittest.main()
+

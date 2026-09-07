@@ -10,6 +10,7 @@ from App.Routes.perfil import perfil_bp
 from App.Routes.feedback import feedback_bp
 from App.Routes.tv import tv_bp
 from App.Routes.equipos import equipos_bp
+from App.Routes.historico import historico_bp
 
 def register_blueprints(app):
     """Registra todos los blueprints de la aplicación"""
@@ -25,3 +26,4 @@ def register_blueprints(app):
     app.register_blueprint(feedback_bp)
     app.register_blueprint(tv_bp)
     app.register_blueprint(equipos_bp)
+    app.register_blueprint(historico_bp)

@@ -46,6 +46,11 @@
         <span>Gestión Bitácoras</span>
       </a>
 
+      <a href="{{ url_for('historico.index') }}" class="nav-item {% if request.endpoint == 'historico.index' %}active{% endif %}">
+        <i class="bi bi-clock-history"></i>
+        <span>Histórico de Casos</span>
+      </a>
+
       <a href="{{ url_for('mail_preview.index') }}" class="nav-item {% if request.endpoint == 'mail_preview.index' %}active{% endif %}">
         <i class="bi bi-envelope-paper"></i>
         <span>Vista Previa Mail</span>

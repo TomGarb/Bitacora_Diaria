@@ -231,20 +231,42 @@ function abrirModalSegunPestana() {
   }
 }
 
+// Determinar si una credencial o tarea programada está vencida o finalizada
+function esVencidaOFinalizada(tarea) {
+  if (['completada', 'cancelada'].includes(tarea.estado)) {
+    return true;
+  }
+  if (tarea.fecha_programada_fin) {
+    const ahora = new Date();
+    const fin = new Date(tarea.fecha_programada_fin.replace(' ', 'T'));
+    if (ahora > fin) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // Categorizar tareas para las 3 vistas
 function categorizarTareas(tareas) {
   const operativas = [];
   const credenciales = [];
   const planificadas = [];
+  const mostrarVencidas = document.getElementById('filter-ver-vencidas')?.checked || false;
 
   tareas.forEach(tarea => {
     if (tarea.tipo_tarea === 'alta_credencial_especial') {
-      credenciales.push(tarea);
+      const vencida = esVencidaOFinalizada(tarea);
+      if (mostrarVencidas || !vencida) {
+        credenciales.push(tarea);
+      }
     } else if (
       ['acceso_equipos', 'retiro_equipos', 'acceso_tecnicos', 'mantenimiento'].includes(tarea.tipo_tarea) ||
       tarea.es_actividad_programada === true
     ) {
-      planificadas.push(tarea);
+      const vencida = esVencidaOFinalizada(tarea);
+      if (mostrarVencidas || !vencida) {
+        planificadas.push(tarea);
+      }
     } else {
       operativas.push(tarea);
     }
@@ -544,7 +566,7 @@ function setupEventListeners() {
   });
 
   // Filtros
-  ['filter-tipo', 'filter-estado', 'filter-mis-tareas', 'filter-programadas'].forEach(id => {
+  ['filter-tipo', 'filter-estado', 'filter-mis-tareas', 'filter-programadas', 'filter-ver-vencidas'].forEach(id => {
     document.getElementById(id)?.addEventListener('change', cargarTareas);
   });
 

@@ -313,8 +313,99 @@ def seed():
             descripcion="Supervisor: Se verifica con el cliente Telecom que la ventana de backup se extiende hasta las 17:00."
         )
         db.session.add_all([sub1, sub2, act1])
+        db.session.commit()
 
-        # 5. Feedbacks de prueba
+        # 4.1 Crear Bitácoras Históricas Cerradas con casos para las 8 pestañas
+        print("4.1 Generando Bitácoras y Casos Históricos de auditoría...")
+        b_pasada_1 = Bitacora(
+            region_id=region_ar.id,
+            fecha=date.today() - timedelta(days=2),
+            turno='tarde',
+            estado='cerrada',
+            supervisor_id=sup_user.id,
+            observaciones_cierre="Turno finalizado sin incidentes mayores. Todos los tickets quedaron asentados."
+        )
+        b_pasada_2 = Bitacora(
+            region_id=region_ar.id,
+            fecha=date.today() - timedelta(days=6),
+            turno='noche',
+            estado='cerrada',
+            supervisor_id=sup_user.id,
+            observaciones_cierre="Guardia nocturna regular. Mantenimiento de UPS ejecutado según cronograma."
+        )
+        db.session.add_all([b_pasada_1, b_pasada_2])
+        db.session.flush()
+
+        # Tareas históricas representativas
+        th_normal = Tarea(
+            bitacora_id=b_pasada_1.id, operador_id=op_user.id, tipo_tarea="virtualizacion",
+            ticket="VIR-3001", titulo="Ampliación de vCPU en Cluster VMware ESXi 04",
+            cliente="Fintech Alpha", estado="completada", descripcion="Hot-add de 4 vCPUs y 16GB vRAM completado sin reinicio.",
+            es_actividad_programada=False
+        )
+        th_personal = Tarea(
+            bitacora_id=b_pasada_1.id, operador_id=op_user.id, tipo_tarea="acceso_tecnicos",
+            ticket="ACC-1904", titulo="Acceso técnico de climatización Liebert",
+            cliente="Vertiv Argentina", estado="completada", descripcion="Mantenimiento preventivo en equipos de aire acondicionado de precisión.",
+            es_actividad_programada=True,
+            fecha_programada_inicio=ahora - timedelta(days=2, hours=5),
+            fecha_programada_fin=ahora - timedelta(days=2, hours=2),
+            campos_extra={"empresa_tecnico": "Vertiv", "sala_datacenter": "Sala A - Servidores y Storage"}
+        )
+        th_retiro = Tarea(
+            bitacora_id=b_pasada_1.id, operador_id=op_user.id, tipo_tarea="retiro_equipos",
+            ticket="RET-881", titulo="Retiro y baja de Chasis Blade HP c7000 en desuso",
+            cliente="Banco Nacional", estado="completada", descripcion="Desmontaje de rack, embalaje y egreso por guardia de seguridad con remito firmado.",
+            es_actividad_programada=True,
+            fecha_programada_inicio=ahora - timedelta(days=2, hours=4),
+            fecha_programada_fin=ahora - timedelta(days=2, hours=1),
+            campos_extra={"sala_datacenter": "Sala A - Servidores y Storage"}
+        )
+        th_mantenimiento = Tarea(
+            bitacora_id=b_pasada_2.id, operador_id=sup_user.id, tipo_tarea="mantenimiento",
+            ticket="MNT-PAS-01", titulo="Reemplazo de baterías de banco UPS B1",
+            cliente="Infraestructura Interna DC", estado="completada", descripcion="Reemplazo de 32 monoblocks VRLA de 12V 100Ah con pruebas de descarga controlada.",
+            es_actividad_programada=True,
+            fecha_programada_inicio=ahora - timedelta(days=6, hours=6),
+            fecha_programada_fin=ahora - timedelta(days=6, hours=2),
+            campos_extra={"sitio_mantenimiento": "Sala de Generadores y UPS"}
+        )
+        th_credencial = Tarea(
+            bitacora_id=b_pasada_2.id, operador_id=op_user.id, tipo_tarea="alta_credencial_especial",
+            ticket="SEC-HIST-12", titulo="Credencial Especial Auditoría KPMG",
+            cliente="Banco Nacional", estado="completada", descripcion="Pases biométricos temporales para inspección reglamentaria de cajas de seguridad.",
+            es_actividad_programada=True,
+            fecha_programada_inicio=ahora - timedelta(days=6, hours=8),
+            fecha_programada_fin=ahora - timedelta(days=6, hours=3),
+            campos_extra={
+                "ticket_cliente": "KPMG-AUD-441",
+                "credenciales_lista": [
+                    {"persona_propietaria": "Valeria Rossi", "codigo_alfanumerico": "CRD-VAL-01"},
+                    {"persona_propietaria": "Esteban Morales", "codigo_alfanumerico": "CRD-EST-02"}
+                ]
+            }
+        )
+        th_externo = Tarea(
+            bitacora_id=b_pasada_2.id, operador_id=op_user.id, tipo_tarea="manejo_sitio_externo",
+            ticket="EXT-PAS-88", titulo="Monitoreo de Enlace Terrestre San Pablo",
+            cliente="Red Internacional", estado="completada", descripcion="Reporte de enlace redundante por Paso de los Libres, pruebas de jitter OK.",
+            campos_extra={"sitio_externo": "Brasil", "cantidad_contactos": 2}
+        )
+        th_nota = Tarea(
+            bitacora_id=b_pasada_2.id, operador_id=op_user.id, tipo_tarea="nota_de_turno",
+            ticket="NOT-PAS-01", titulo="Novedad de relevo nocturno",
+            cliente="Operaciones DOC", estado="completada", descripcion="Se informa a guardia entrante que el aire acondicionado CRAH 03 quedó en modo standby programado.",
+            campos_extra={}
+        )
+        th_extra = Tarea(
+            bitacora_id=b_pasada_1.id, operador_id=op_user.id, tipo_tarea="tarea_extra",
+            ticket="EXTR-HIST-04", titulo="Auditoría visual de térmicas en PDU B02",
+            cliente="Infraestructura Interna DC", estado="completada", descripcion="Termografía infrarroja sin puntos calientes (temperatura máx 38°C).",
+            campos_extra={}
+        )
+
+        db.session.add_all([th_normal, th_personal, th_retiro, th_mantenimiento, th_credencial, th_externo, th_nota, th_extra])
+        db.session.commit()
         print("5. Verificando Feedbacks de ejemplo...")
         Feedback.query.delete()
         fb1 = Feedback(

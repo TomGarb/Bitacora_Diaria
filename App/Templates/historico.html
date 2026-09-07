@@ -1,0 +1,405 @@
+{% extends "base.html" %}
+
+{% block title %}Histórico de Casos - DOC{% endblock %}
+{% block page_title %}Histórico y Auditoría de Casos{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='Css/historico.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='Css/subtareas.css') }}">
+{% endblock %}
+
+{% block navbar_actions %}
+<div style="display:flex; gap:0.5rem; align-items:center;">
+  <button class="btn btn-secondary btn-sm" onclick="exportarCSV()" title="Descargar casos filtrados en formato CSV">
+    <i class="bi bi-file-earmark-spreadsheet"></i> Exportar CSV
+  </button>
+  <button class="btn btn-secondary btn-sm" onclick="cargarHistorico()" title="Refrescar">
+    <i class="bi bi-arrow-clockwise"></i> Refrescar
+  </button>
+</div>
+{% endblock %}
+
+{% block content %}
+<input type="hidden" id="current-user-region-id" value="{{ region.id if region else 1 }}">
+
+<!-- Card de Filtros Avanzados y Rango Temporal -->
+<div class="historico-filter-card">
+  <div class="historico-filter-grid">
+    
+    <!-- Filtro de Búsqueda Rápida -->
+    <div class="form-group" style="margin-bottom:0;">
+      <label class="form-label" style="font-size:0.8rem; margin-bottom:0.25rem;"><i class="bi bi-search"></i> Búsqueda libre</label>
+      <div class="search-input-wrapper">
+        <i class="bi bi-search"></i>
+        <input type="text" id="search-input" class="form-control form-control-sm" placeholder="Ticket, cliente, título, código...">
+      </div>
+    </div>
+
+    <!-- Rango de Fechas: Desde -->
+    <div class="form-group" style="margin-bottom:0;">
+      <label class="form-label" style="font-size:0.8rem; margin-bottom:0.25rem;"><i class="bi bi-calendar-event"></i> Fecha Desde</label>
+      <input type="date" id="filter-fecha-desde" class="form-control form-control-sm">
+    </div>
+
+    <!-- Rango de Fechas: Hasta -->
+    <div class="form-group" style="margin-bottom:0;">
+      <label class="form-label" style="font-size:0.8rem; margin-bottom:0.25rem;"><i class="bi bi-calendar-check"></i> Fecha Hasta</label>
+      <input type="date" id="filter-fecha-hasta" class="form-control form-control-sm">
+    </div>
+
+    <!-- Estado -->
+    <div class="form-group" style="margin-bottom:0;">
+      <label class="form-label" style="font-size:0.8rem; margin-bottom:0.25rem;">Estado</label>
+      <select id="filter-estado" class="form-select form-select-sm">
+        <option value="">Todos los estados</option>
+        <option value="completada">Completada</option>
+        <option value="en_progreso">En Progreso</option>
+        <option value="pendiente">Pendiente</option>
+        <option value="cancelada">Cancelada</option>
+      </select>
+    </div>
+
+    <!-- Región (solo admin global) -->
+    {% if user and user.rol == 'admin' %}
+    <div class="form-group" style="margin-bottom:0;">
+      <label class="form-label" style="font-size:0.8rem; margin-bottom:0.25rem;">Sede / Región</label>
+      <select id="filter-region" class="form-select form-select-sm">
+        <option value="">Todas las regiones</option>
+        {% for r in regiones %}
+          <option value="{{ r.id }}" {% if region and region.id == r.id %}selected{% endif %}>{{ r.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% else %}
+    <input type="hidden" id="filter-region" value="{{ region.id if region else 1 }}">
+    {% endif %}
+
+  </div>
+
+  <!-- Botones de Presets de Rápida Selección Temporal -->
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.85rem; flex-wrap:wrap; gap:0.5rem;">
+    <div class="date-preset-btns">
+      <span style="font-size:0.75rem; color:var(--text-muted); align-self:center; margin-right:0.3rem;">Presets:</span>
+      <button type="button" class="date-preset-btn" onclick="aplicarPresetFecha('hoy')">Hoy</button>
+      <button type="button" class="date-preset-btn" onclick="aplicarPresetFecha('7dias')">Últimos 7 días</button>
+      <button type="button" class="date-preset-btn active" onclick="aplicarPresetFecha('mes')">Últimos 30 días</button>
+      <button type="button" class="date-preset-btn" onclick="aplicarPresetFecha('todo')">Todo el Histórico</button>
+    </div>
+    <button type="button" class="btn btn-secondary btn-sm" onclick="limpiarFiltros()" style="font-size:0.75rem; padding:0.2rem 0.6rem;">
+      <i class="bi bi-x-circle"></i> Limpiar Filtros
+    </button>
+  </div>
+</div>
+
+<!-- 8 Pestañas Temáticas de Alto Nivel -->
+<div class="historico-tabs-wrapper">
+  <div class="historico-tabs-container" id="historico-tabs-bar">
+    <button type="button" class="historico-tab-btn active" id="tab-btn-normal" onclick="cambiarPestanaHistorico('normal')">
+      <i class="bi bi-cpu"></i>
+      <span>Caso normal</span>
+      <span class="tab-badge" id="badge-count-normal">0</span>
+    </button>
+
+    <button type="button" class="historico-tab-btn" id="tab-btn-personal" onclick="cambiarPestanaHistorico('personal')">
+      <i class="bi bi-person-badge"></i>
+      <span>Ingreso de personal</span>
+      <span class="tab-badge" id="badge-count-personal">0</span>
+    </button>
+
+    <button type="button" class="historico-tab-btn" id="tab-btn-equipamiento" onclick="cambiarPestanaHistorico('equipamiento')">
+      <i class="bi bi-box-arrow-in-right"></i>
+      <span>Ingreso/Egreso equipamiento</span>
+      <span class="tab-badge" id="badge-count-equipamiento">0</span>
+    </button>
+
+    <button type="button" class="historico-tab-btn" id="tab-btn-mantenimientos" onclick="cambiarPestanaHistorico('mantenimientos')">
+      <i class="bi bi-tools"></i>
+      <span>Mantenimientos</span>
+      <span class="tab-badge" id="badge-count-mantenimientos">0</span>
+    </button>
+
+    <button type="button" class="historico-tab-btn" id="tab-btn-credenciales" onclick="cambiarPestanaHistorico('credenciales')">
+      <i class="bi bi-key-fill"></i>
+      <span>Credenciales</span>
+      <span class="tab-badge" id="badge-count-credenciales">0</span>
+    </button>
+
+    <button type="button" class="historico-tab-btn" id="tab-btn-externos" onclick="cambiarPestanaHistorico('externos')">
+      <i class="bi bi-globe2"></i>
+      <span>Casos Externos</span>
+      <span class="tab-badge" id="badge-count-externos">0</span>
+    </button>
+
+    <button type="button" class="historico-tab-btn" id="tab-btn-notas" onclick="cambiarPestanaHistorico('notas')">
+      <i class="bi bi-journal-text"></i>
+      <span>Notas</span>
+      <span class="tab-badge" id="badge-count-notas">0</span>
+    </button>
+
+    <button type="button" class="historico-tab-btn" id="tab-btn-extras" onclick="cambiarPestanaHistorico('extras')">
+      <i class="bi bi-plus-circle-dotted"></i>
+      <span>Tareas Extras</span>
+      <span class="tab-badge" id="badge-count-extras">0</span>
+    </button>
+  </div>
+</div>
+
+<!-- CONTENEDORES DE TABLAS POR PESTAÑA -->
+
+<!-- 1. CASO NORMAL -->
+<div id="panel-normal" class="card tab-panel-historico" style="display:block;">
+  <div class="card-header">
+    <div class="card-title"><i class="bi bi-cpu" style="color:var(--primary);"></i> Histórico: Casos Operativos de Rutina (Manos inteligentes, Manos remotas, Virtualización, Backups, etc.)</div>
+  </div>
+  <div class="table-responsive">
+    <table class="custom-table">
+      <thead>
+        <tr>
+          <th>Ticket / Fecha</th>
+          <th>Bitácora / Turno</th>
+          <th>Título, Detalles & Novedades</th>
+          <th>Cliente</th>
+          <th>Tipo</th>
+          <th>Estado</th>
+          <th>Operador</th>
+          <th style="text-align: right;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-normal">
+        <tr><td colspan="8" style="text-align:center; color:var(--text-muted);">Cargando histórico...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 2. INGRESO DE PERSONAL -->
+<div id="panel-personal" class="card tab-panel-historico" style="display:none;">
+  <div class="card-header">
+    <div class="card-title"><i class="bi bi-person-badge" style="color:#38bdf8;"></i> Histórico: Ingreso de Técnicos y Personal a Datacenter</div>
+  </div>
+  <div class="table-responsive">
+    <table class="custom-table">
+      <thead>
+        <tr>
+          <th>Ticket / Fecha</th>
+          <th>Bitácora / Turno</th>
+          <th>Empresa / Técnico</th>
+          <th>Ubicación / Sala DC</th>
+          <th>Motivo / Descripción</th>
+          <th>Estado</th>
+          <th>Operador</th>
+          <th style="text-align: right;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-personal">
+        <tr><td colspan="8" style="text-align:center; color:var(--text-muted);">Cargando histórico...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 3. INGRESO / EGRESO DE EQUIPAMIENTO -->
+<div id="panel-equipamiento" class="card tab-panel-historico" style="display:none;">
+  <div class="card-header">
+    <div class="card-title"><i class="bi bi-box-arrow-in-right" style="color:#a78bfa;"></i> Histórico: Movimiento de Equipamiento (Ingreso y Retiro)</div>
+  </div>
+  <div class="table-responsive">
+    <table class="custom-table">
+      <thead>
+        <tr>
+          <th>Ticket / Fecha</th>
+          <th>Bitácora / Turno</th>
+          <th>Movimiento</th>
+          <th>Cliente</th>
+          <th>Sala / Ubicación</th>
+          <th>Detalle de Hardware</th>
+          <th>Estado</th>
+          <th>Operador</th>
+          <th style="text-align: right;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-equipamiento">
+        <tr><td colspan="9" style="text-align:center; color:var(--text-muted);">Cargando histórico...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 4. MANTENIMIENTOS -->
+<div id="panel-mantenimientos" class="card tab-panel-historico" style="display:none;">
+  <div class="card-header">
+    <div class="card-title"><i class="bi bi-tools" style="color:#fbbf24;"></i> Histórico: Mantenimientos e Intervenciones de Infraestructura</div>
+  </div>
+  <div class="table-responsive">
+    <table class="custom-table">
+      <thead>
+        <tr>
+          <th>Ticket / Fecha</th>
+          <th>Bitácora / Turno</th>
+          <th>Título / Intervención</th>
+          <th>Sitio / Subestación</th>
+          <th>Ventana Programada</th>
+          <th>Estado</th>
+          <th>Operador</th>
+          <th style="text-align: right;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-mantenimientos">
+        <tr><td colspan="8" style="text-align:center; color:var(--text-muted);">Cargando histórico...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 5. CREDENCIALES -->
+<div id="panel-credenciales" class="card tab-panel-historico" style="display:none;">
+  <div class="card-header">
+    <div class="card-title"><i class="bi bi-key-fill" style="color:#34d399;"></i> Histórico: Credenciales Especiales de Acceso</div>
+  </div>
+  <div class="table-responsive">
+    <table class="custom-table">
+      <thead>
+        <tr>
+          <th>Ticket DOC / Fecha</th>
+          <th>Ticket Cliente</th>
+          <th>Personas Asignadas & Códigos</th>
+          <th>Vigencia Programada</th>
+          <th>Estado Vigencia</th>
+          <th>Operador</th>
+          <th style="text-align: right;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-credenciales">
+        <tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Cargando histórico...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 6. CASOS EXTERNOS -->
+<div id="panel-externos" class="card tab-panel-historico" style="display:none;">
+  <div class="card-header">
+    <div class="card-title"><i class="bi bi-globe2" style="color:#f43f5e;"></i> Histórico: Manejo de Sitios y Enlaces Externos</div>
+  </div>
+  <div class="table-responsive">
+    <table class="custom-table">
+      <thead>
+        <tr>
+          <th>Ticket / Fecha</th>
+          <th>Bitácora / Turno</th>
+          <th>Sitio Externo</th>
+          <th>Contactos</th>
+          <th>Cliente / Motivo</th>
+          <th>Estado</th>
+          <th>Operador</th>
+          <th style="text-align: right;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-externos">
+        <tr><td colspan="8" style="text-align:center; color:var(--text-muted);">Cargando histórico...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 7. NOTAS -->
+<div id="panel-notas" class="card tab-panel-historico" style="display:none;">
+  <div class="card-header">
+    <div class="card-title"><i class="bi bi-journal-text" style="color:#818cf8;"></i> Histórico: Notas de Turno y Relevos</div>
+  </div>
+  <div class="table-responsive">
+    <table class="custom-table">
+      <thead>
+        <tr>
+          <th>Ticket / Ref</th>
+          <th>Fecha Bitácora</th>
+          <th>Turno</th>
+          <th>Operador Emisor</th>
+          <th>Nota / Observación Registrada</th>
+          <th style="text-align: right;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-notas">
+        <tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Cargando histórico...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 8. TAREAS EXTRAS -->
+<div id="panel-extras" class="card tab-panel-historico" style="display:none;">
+  <div class="card-header">
+    <div class="card-title"><i class="bi bi-plus-circle-dotted" style="color:#ec4899;"></i> Histórico: Tareas Extras Aplicadas</div>
+  </div>
+  <div class="table-responsive">
+    <table class="custom-table">
+      <thead>
+        <tr>
+          <th>Ticket / Fecha</th>
+          <th>Bitácora / Turno</th>
+          <th>Cliente</th>
+          <th>Título / Tarea Extra</th>
+          <th>Detalle Técnico</th>
+          <th>Estado</th>
+          <th>Operador</th>
+          <th style="text-align: right;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-extras">
+        <tr><td colspan="8" style="text-align:center; color:var(--text-muted);">Cargando histórico...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MODAL: Auditoría Detallada del Caso Histórico -->
+<div id="modal-detalle-historico" class="modal-overlay">
+  <div class="modal-container" style="max-width: 760px;">
+    <div class="modal-header">
+      <h3 class="modal-title"><i class="bi bi-clock-history"></i> Auditoría de Caso: <span id="hist-ticket" style="color:var(--primary);"></span></h3>
+      <button class="modal-close" onclick="closeModal('modal-detalle-historico')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <!-- Metadatos generales -->
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:0.6rem; margin-bottom:0.85rem; font-size:0.85rem; background:rgba(15,23,42,0.6); padding:0.75rem; border-radius:var(--radius-sm); border:1px solid var(--border-color);">
+        <div><strong>Título:</strong> <span id="hist-titulo"></span></div>
+        <div><strong>Cliente:</strong> <span id="hist-cliente"></span></div>
+        <div><strong>Tipo:</strong> <span id="hist-tipo" style="text-transform:capitalize;"></span></div>
+        <div><strong>Estado:</strong> <span id="hist-estado"></span></div>
+        <div><strong>Sede / Región:</strong> <span id="hist-region"></span></div>
+        <div><strong>Bitácora:</strong> <span id="hist-bitacora"></span></div>
+        <div><strong>Creado Por:</strong> <span id="hist-operador"></span></div>
+        <div><strong>Fecha Creación:</strong> <span id="hist-fecha"></span></div>
+      </div>
+
+      <!-- Descripción inicial -->
+      <div class="card" style="padding:0.75rem; background:#0f172a; margin-bottom:0.85rem;">
+        <strong style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-bottom:0.25rem;"><i class="bi bi-file-text"></i> Descripción Inicial:</strong>
+        <div id="hist-descripcion" style="font-size:0.875rem; white-space:pre-wrap;"></div>
+      </div>
+
+      <!-- Campos Dinámicos Extra & Credenciales -->
+      <div id="hist-extra-box" class="card" style="padding:0.75rem; background:#0f172a; margin-bottom:0.85rem; display:none;">
+        <strong style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-bottom:0.25rem;"><i class="bi bi-sliders"></i> Campos Específicos:</strong>
+        <div id="hist-campos-extra" style="font-size:0.85rem; display:flex; flex-direction:column; gap:0.35rem;"></div>
+      </div>
+
+      <!-- Notas cronológicas y subtareas registradas durante el caso -->
+      <div class="card" style="padding:0.75rem; background:#0f172a; margin-bottom:0.5rem;">
+        <strong style="font-size:0.8rem; color:var(--primary); display:block; margin-bottom:0.5rem;"><i class="bi bi-chat-left-text"></i> Historial de Novedades y Subtareas:</strong>
+        <div id="hist-seguimiento-list" style="max-height: 220px; overflow-y:auto; display:flex; flex-direction:column; gap:0.4rem;">
+          <!-- Novedades cronológicas -->
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" onclick="closeModal('modal-detalle-historico')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='Js/historico.js') }}"></script>
+{% endblock %}
