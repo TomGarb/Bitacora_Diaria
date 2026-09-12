@@ -248,11 +248,11 @@
         </div>
 
         <!-- Contenedor de Campos Extra Dinámicos Genéricos -->
-        <div id="dynamic-fields-container" style="display:none; background: rgba(15, 23, 42, 0.4); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 1rem;">
+        <div id="dynamic-fields-container" style="display:none; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 1rem;">
         </div>
 
         <!-- Sección de Actividad Programada & Fechas -->
-        <div id="programada-section-box" style="background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.85rem; margin-bottom: 1rem;">
+        <div id="programada-section-box" style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.85rem; margin-bottom: 1rem;">
           <div class="form-group" style="margin-bottom: 0.5rem;">
             <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; font-weight: 600; cursor: pointer;">
               <input type="checkbox" id="es_actividad_programada">
@@ -311,7 +311,7 @@
     </div>
     <div class="modal-body">
       <!-- Metadatos de la tarea -->
-      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:0.6rem; margin-bottom:0.85rem; font-size:0.875rem; background:rgba(15,23,42,0.6); padding:0.75rem; border-radius:var(--radius-sm); border:1px solid var(--border-color);">
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:0.6rem; margin-bottom:0.85rem; font-size:0.875rem; background:var(--bg-tertiary); padding:0.75rem; border-radius:var(--radius-sm); border:1px solid var(--border-color);">
         <div><strong>Título:</strong> <span id="detalle-titulo"></span></div>
         <div><strong>Cliente:</strong> <span id="detalle-cliente"></span></div>
         <div><strong>Tipo:</strong> <span id="detalle-tipo" style="text-transform:capitalize;"></span></div>
@@ -320,13 +320,13 @@
         <div><strong>Fecha Creación:</strong> <span id="detalle-fecha"></span></div>
       </div>
 
-      <div class="card" style="padding:0.75rem; background:#0f172a; margin-bottom:0.85rem;">
+      <div class="card" style="padding:0.75rem; background:var(--bg-tertiary); margin-bottom:0.85rem;">
         <strong style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-bottom:0.25rem;"><i class="bi bi-file-text"></i> Descripción Inicial del Caso:</strong>
         <div id="detalle-descripcion" style="font-size:0.875rem; white-space:pre-wrap;"></div>
       </div>
 
       <!-- Campos Dinámicos Extra & Credenciales -->
-      <div id="detalle-extra-box" class="card" style="padding:0.75rem; background:#0f172a; margin-bottom:0.85rem; display:none;">
+      <div id="detalle-extra-box" class="card" style="padding:0.75rem; background:var(--bg-tertiary); margin-bottom:0.85rem; display:none;">
         <strong style="font-size:0.8rem; color:var(--text-secondary); display:block; margin-bottom:0.25rem;">Campos Específicos / Credenciales:</strong>
         <div id="detalle-campos-extra" style="font-size:0.85rem; display:flex; flex-direction:column; gap:0.35rem;"></div>
       </div>
@@ -350,7 +350,7 @@
           </div>
 
           <!-- Formulario: Agregar Actualización / Comentario sin ticket -->
-          <form id="form-nueva-actualizacion" onsubmit="agregarActualizacionDesdeDetalle(event)" style="padding:0.75rem; background:rgba(15, 23, 42, 0.5); border:1px solid var(--border-color); border-radius:var(--radius-sm);">
+          <form id="form-nueva-actualizacion" onsubmit="agregarActualizacionDesdeDetalle(event)" style="padding:0.75rem; background:var(--bg-tertiary); border:1px solid var(--border-color); border-radius:var(--radius-sm);">
             <div style="font-size:0.8rem; font-weight:700; color:var(--primary); margin-bottom:0.4rem; display:flex; align-items:center; gap:0.35rem;">
               <i class="bi bi-chat-dots"></i> Agregar Actualización / Novedad al Caso (Sin requerir ticket)
             </div>
@@ -382,7 +382,7 @@
           </div>
 
           <!-- Formulario: Agregar Subtarea con Ticket -->
-          <form id="form-nueva-subtarea" onsubmit="agregarSubtareaDesdeDetalle(event)" style="padding:0.75rem; background:rgba(15, 23, 42, 0.5); border:1px solid var(--border-color); border-radius:var(--radius-sm);">
+          <form id="form-nueva-subtarea" onsubmit="agregarSubtareaDesdeDetalle(event)" style="padding:0.75rem; background:var(--bg-tertiary); border:1px solid var(--border-color); border-radius:var(--radius-sm);">
             <div style="font-size:0.8rem; font-weight:700; color:var(--primary); margin-bottom:0.4rem; display:flex; align-items:center; gap:0.35rem;">
               <i class="bi bi-plus-circle"></i> Agregar Nueva Subtarea con Ticket
             </div>

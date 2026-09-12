@@ -1,22 +1,22 @@
-/* Estilos específicos de la pantalla de Login */
+/* Estilos específicos de la pantalla de Login (Identidad Violeta, Azul y Blanco) */
 .login-page {
   min-height: 100vh;
   width: 100vw;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at top right, #1e1b4b, #0f172a 60%);
+  background: linear-gradient(135deg, #312e81 0%, #6358e1 45%, #1d4ed8 100%);
   padding: 1.5rem;
 }
 
 .login-card {
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-color);
+  background-color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: var(--radius-lg);
   width: 100%;
   max-width: 440px;
-  padding: 2.5rem 2rem;
-  box-shadow: var(--shadow-lg);
+  padding: 2.75rem 2.25rem;
+  box-shadow: 0 20px 40px -8px rgba(15, 23, 42, 0.35);
 }
 
 .login-brand {
@@ -25,16 +25,21 @@
 }
 
 .login-brand .brand-icon {
-  width: 54px;
-  height: 54px;
-  font-size: 1.75rem;
+  width: 56px;
+  height: 56px;
+  font-size: 1.85rem;
   margin: 0 auto 1rem;
+  background: linear-gradient(135deg, var(--primary), var(--accent-blue));
+  color: #ffffff;
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 16px var(--primary-glow);
 }
 
 .login-brand h1 {
   font-size: 1.35rem;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--text-primary);
+  letter-spacing: -0.01em;
 }
 
 .login-brand p {
@@ -53,11 +58,12 @@
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   margin-bottom: 0.75rem;
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  letter-spacing: 0.03em;
 }
 
 .demo-chips {
@@ -70,27 +76,29 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.5rem 0.75rem;
-  background: var(--bg-main);
+  padding: 0.6rem 0.85rem;
+  background: #f8fafc;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
   text-align: left;
 }
 
 .demo-chip:hover {
   border-color: var(--primary);
-  background-color: rgba(59, 130, 246, 0.08);
+  background-color: var(--primary-light);
+  transform: translateY(-1px);
 }
 
 .demo-chip-name {
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.82rem;
+  font-weight: 700;
   color: var(--text-primary);
 }
 
 .demo-chip-sub {
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   color: var(--text-secondary);
+  margin-top: 2px;
 }

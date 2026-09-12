@@ -4,13 +4,15 @@
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: 1.25rem;
+  padding: 1.25rem 1.35rem;
   margin-bottom: 1rem;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.25s;
+  box-shadow: var(--shadow-sm);
 }
 
 .feedback-card:hover {
   border-color: var(--primary);
+  box-shadow: var(--shadow-md);
 }
 
 .feedback-header {
@@ -37,24 +39,25 @@
 
 .feedback-body {
   font-size: 0.875rem;
-  color: var(--text-secondary);
+  color: var(--text-primary);
   line-height: 1.5;
   white-space: pre-wrap;
-  background: rgba(15, 23, 42, 0.4);
-  padding: 0.75rem;
+  background: var(--bg-tertiary);
+  padding: 0.85rem;
   border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
   border-left: 3px solid var(--primary);
 }
 
 .feedback-response-box {
   margin-top: 0.75rem;
-  background: rgba(30, 41, 59, 0.6);
+  background: var(--bg-surface);
   border: 1px dashed var(--border-color);
   padding: 0.75rem;
   border-radius: var(--radius-sm);
 }
 
-.fb-badge-error_sistema { background: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); }
-.fb-badge-modificacion_tarea { background: rgba(245, 158, 11, 0.15); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.3); }
-.fb-badge-sugerencia_mejora { background: rgba(59, 130, 246, 0.15); color: var(--primary); border: 1px solid rgba(59, 130, 246, 0.3); }
-.fb-badge-otro { background: rgba(148, 163, 184, 0.15); color: var(--text-secondary); border: 1px solid rgba(148, 163, 184, 0.3); }
+.fb-badge-error_sistema { background: var(--danger-light); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); }
+.fb-badge-modificacion_tarea { background: var(--warning-light); color: #b45309; border: 1px solid rgba(245, 158, 11, 0.3); }
+.fb-badge-sugerencia_mejora { background: var(--primary-light); color: var(--primary); border: 1px solid rgba(99, 88, 225, 0.3); }
+.fb-badge-otro { background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-color); }

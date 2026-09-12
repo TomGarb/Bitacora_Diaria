@@ -6,6 +6,7 @@
   border-radius: var(--radius-md);
   padding: 1.5rem;
   margin-bottom: 1.5rem;
+  box-shadow: var(--shadow-sm);
 }
 
 .config-section-title {
@@ -31,7 +32,7 @@
 }
 
 .task-type-toggle-card {
-  background: #0f172a;
+  background: #f8fafc;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
   padding: 0.85rem;
@@ -46,12 +47,12 @@
 
 .task-type-toggle-card:hover {
   border-color: var(--primary);
-  background-color: rgba(59, 130, 246, 0.05);
+  background-color: var(--primary-light);
 }
 
 .task-type-toggle-card.selected {
   border-color: var(--primary);
-  background: rgba(59, 130, 246, 0.12);
+  background: var(--primary-light);
 }
 
 .custom-card-actions {
@@ -64,7 +65,7 @@
 }
 
 .extra-field-row {
-  background: #0f172a;
+  background: #f8fafc;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
   padding: 0.75rem 0.9rem;
@@ -85,10 +86,10 @@
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  background: rgba(15, 23, 42, 0.7);
+  background: var(--bg-surface);
   padding: 0.5rem 0.75rem;
   border-radius: var(--radius-sm);
-  border: 1px dashed rgba(59, 130, 246, 0.3);
+  border: 1px dashed rgba(99, 88, 225, 0.35);
 }
 
 @media (max-width: 850px) {
@@ -98,7 +99,7 @@
 }
 
 .shift-config-card {
-  background: #0f172a;
+  background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
   padding: 1rem;

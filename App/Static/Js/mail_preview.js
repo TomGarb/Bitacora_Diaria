@@ -87,10 +87,10 @@ async function cargarVistaPreviaMail(bitacoraId = '') {
         let subHtml = renderSubtareasInline(t);
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td><strong style="color:#2563eb;">${t.ticket}</strong></td>
+          <td><strong style="color:var(--accent-blue);">${t.ticket}</strong></td>
           <td><strong>${t.cliente}</strong></td>
           <td>${t.titulo}</td>
-          <td><span style="font-size:0.75rem; text-transform:capitalize; background:#f1f5f9; padding:2px 6px; border-radius:3px;">${t.tipo_tarea.replace(/_/g, ' ')}</span></td>
+          <td><span style="font-size:0.75rem; text-transform:capitalize; background:var(--bg-tertiary); color:var(--text-secondary); border:1px solid var(--border-color); padding:2px 6px; border-radius:3px;">${t.tipo_tarea.replace(/_/g, ' ')}</span></td>
           <td>
             <div>${t.descripcion}</div>
             ${subHtml}
@@ -106,20 +106,20 @@ async function cargarVistaPreviaMail(bitacoraId = '') {
     const tbodyEquipos = document.getElementById('tbody-prog-equipos');
     tbodyEquipos.innerHTML = '';
     if (sec.programados_equipos.length === 0) {
-      tbodyEquipos.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#64748b;">Sin ingresos/retiros de equipos programados</td></tr>';
+      tbodyEquipos.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Sin ingresos/retiros de equipos programados</td></tr>';
     } else {
       sec.programados_equipos.forEach(t => {
         const sala = t.campos_extra?.sala_datacenter || 'No especificada';
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td><strong style="color:#2563eb;">${t.ticket}</strong></td>
+          <td><strong style="color:var(--accent-blue);">${t.ticket}</strong></td>
           <td><strong>${t.cliente}</strong></td>
           <td><i class="bi bi-door-open"></i> ${sala}</td>
           <td>${t.fecha_programada_inicio || '-'}</td>
-          <td>${t.fecha_programada_fin || '<span style="color:#64748b;">(A confirmar)</span>'}</td>
+          <td>${t.fecha_programada_fin || '<span style="color:var(--text-muted);">(A confirmar)</span>'}</td>
           <td>
             <strong>${t.titulo}</strong>
-            <div style="font-size:0.8rem; color:#475569;">${t.descripcion}</div>
+            <div style="font-size:0.8rem; color:var(--text-secondary);">${t.descripcion}</div>
           </td>
           <td style="text-align:center;"><span class="m-badge m-badge-${t.estado}">${t.estado.replace('_', ' ')}</span></td>
         `;
@@ -131,21 +131,21 @@ async function cargarVistaPreviaMail(bitacoraId = '') {
     const tbodyTecnicos = document.getElementById('tbody-prog-tecnicos');
     tbodyTecnicos.innerHTML = '';
     if (sec.programados_tecnicos.length === 0) {
-      tbodyTecnicos.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#64748b;">Sin accesos de técnicos programados</td></tr>';
+      tbodyTecnicos.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Sin accesos de técnicos programados</td></tr>';
     } else {
       sec.programados_tecnicos.forEach(t => {
         const sala = t.campos_extra?.sala_datacenter || 'No especificada';
         const empresa = t.campos_extra?.empresa_tecnico ? ` (${t.campos_extra.empresa_tecnico})` : '';
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td><strong style="color:#2563eb;">${t.ticket}</strong></td>
+          <td><strong style="color:var(--accent-blue);">${t.ticket}</strong></td>
           <td><strong>${t.cliente}</strong>${empresa}</td>
           <td><i class="bi bi-door-open"></i> ${sala}</td>
           <td>${t.fecha_programada_inicio || '-'}</td>
-          <td>${t.fecha_programada_fin || '<span style="color:#64748b;">(A confirmar)</span>'}</td>
+          <td>${t.fecha_programada_fin || '<span style="color:var(--text-muted);">(A confirmar)</span>'}</td>
           <td>
             <strong>${t.titulo}</strong>
-            <div style="font-size:0.8rem; color:#475569;">${t.descripcion}</div>
+            <div style="font-size:0.8rem; color:var(--text-secondary);">${t.descripcion}</div>
           </td>
           <td style="text-align:center;"><span class="m-badge m-badge-${t.estado}">${t.estado.replace('_', ' ')}</span></td>
         `;
@@ -157,20 +157,20 @@ async function cargarVistaPreviaMail(bitacoraId = '') {
     const tbodyMnt = document.getElementById('tbody-prog-mantenimientos');
     tbodyMnt.innerHTML = '';
     if (sec.programados_mantenimientos.length === 0) {
-      tbodyMnt.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#64748b;">Sin mantenimientos programados</td></tr>';
+      tbodyMnt.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Sin mantenimientos programados</td></tr>';
     } else {
       sec.programados_mantenimientos.forEach(t => {
         const sitio = t.campos_extra?.sitio_mantenimiento || 'DC General';
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td><strong style="color:#2563eb;">${t.ticket}</strong></td>
+          <td><strong style="color:var(--accent-blue);">${t.ticket}</strong></td>
           <td><strong>${t.cliente}</strong></td>
           <td><strong><i class="bi bi-tools"></i> ${sitio}</strong></td>
-          <td><strong style="color:#1e40af;">${t.fecha_programada_inicio || '-'}</strong></td>
-          <td><strong style="color:#1e40af;">${t.fecha_programada_fin || '-'}</strong></td>
+          <td><strong style="color:var(--accent-blue);">${t.fecha_programada_inicio || '-'}</strong></td>
+          <td><strong style="color:var(--accent-blue);">${t.fecha_programada_fin || '-'}</strong></td>
           <td>
             <strong>${t.titulo}</strong>
-            <div style="font-size:0.8rem; color:#475569;">${t.descripcion}</div>
+            <div style="font-size:0.8rem; color:var(--text-secondary);">${t.descripcion}</div>
           </td>
           <td style="text-align:center;"><span class="m-badge m-badge-${t.estado}">${t.estado.replace('_', ' ')}</span></td>
         `;
@@ -187,7 +187,7 @@ async function cargarVistaPreviaMail(bitacoraId = '') {
       sec.programados_otros.forEach(t => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td><strong style="color:#2563eb;">${t.ticket}</strong></td>
+          <td><strong style="color:var(--accent-blue);">${t.ticket}</strong></td>
           <td><strong>${t.cliente}</strong></td>
           <td>${t.titulo}</td>
           <td>${t.fecha_programada_inicio || 'Horario a confirmar'}</td>
@@ -204,7 +204,7 @@ async function cargarVistaPreviaMail(bitacoraId = '') {
     const tbodyCreds = document.getElementById('tbody-credenciales');
     tbodyCreds.innerHTML = '';
     if (sec.credenciales_especiales.length === 0) {
-      tbodyCreds.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#64748b;">No hay altas de credenciales especiales registradas</td></tr>';
+      tbodyCreds.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No hay altas de credenciales especiales registradas</td></tr>';
     } else {
       sec.credenciales_especiales.forEach(t => {
         const ticketCli = t.campos_extra?.ticket_cliente || '-';
@@ -217,26 +217,26 @@ async function cargarVistaPreviaMail(bitacoraId = '') {
             listaHtml += `
               <tr>
                 <td style="padding:2px 4px; border:none;">• <strong>${c.persona_propietaria}</strong></td>
-                <td style="padding:2px 4px; border:none; font-family:monospace; color:#2563eb;">[Código: ${c.codigo_alfanumerico}]</td>
+                <td style="padding:2px 4px; border:none; font-family:monospace; color:var(--accent-blue);">[Código: ${c.codigo_alfanumerico}]</td>
               </tr>
             `;
           });
           listaHtml += '</table>';
         } else if (t.campos_extra?.persona_propietaria) {
-          listaHtml = `• <strong>${t.campos_extra.persona_propietaria}</strong> [Código: <span style="font-family:monospace; color:#2563eb;">${t.campos_extra.codigo_alfanumerico || ''}</span>]`;
+          listaHtml = `• <strong>${t.campos_extra.persona_propietaria}</strong> [Código: <span style="font-family:monospace; color:var(--accent-blue);">${t.campos_extra.codigo_alfanumerico || ''}</span>]`;
         } else {
-          listaHtml = '<span style="color:#64748b;">(Sin personas especificadas)</span>';
+          listaHtml = '<span style="color:var(--text-muted);">(Sin personas especificadas)</span>';
         }
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td><strong style="color:#2563eb;">${t.ticket}</strong></td>
+          <td><strong style="color:var(--accent-blue);">${t.ticket}</strong></td>
           <td><strong>${t.cliente}</strong></td>
           <td><strong>${ticketCli}</strong></td>
           <td>
             <div style="font-weight:600; margin-bottom:2px;">${t.titulo}</div>
             ${listaHtml}
-            <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">${t.descripcion}</div>
+            <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:2px;">${t.descripcion}</div>
           </td>
           <td style="text-align:center;"><span class="m-badge m-badge-${t.estado}">${t.estado.replace('_', ' ')}</span></td>
         `;
@@ -248,20 +248,20 @@ async function cargarVistaPreviaMail(bitacoraId = '') {
     const tbodySitios = document.getElementById('tbody-sitios-externos');
     tbodySitios.innerHTML = '';
     if (sec.sitios_externos.length === 0) {
-      tbodySitios.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#64748b;">No hay registros de sitios externos</td></tr>';
+      tbodySitios.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">No hay registros de sitios externos</td></tr>';
     } else {
       sec.sitios_externos.forEach(t => {
         const sitioExt = t.campos_extra?.sitio_externo || 'Exterior';
         const contactos = t.campos_extra?.cantidad_contactos !== undefined ? t.campos_extra.cantidad_contactos : '-';
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td><strong style="color:#2563eb;">${t.ticket}</strong></td>
+          <td><strong style="color:var(--accent-blue);">${t.ticket}</strong></td>
           <td><strong>${t.cliente}</strong></td>
-          <td><strong style="color:#7c3aed;"><i class="bi bi-geo-alt"></i> ${sitioExt}</strong></td>
-          <td style="text-align:center;"><strong style="font-size:1rem; color:#2563eb;">${contactos}</strong></td>
+          <td><strong style="color:var(--primary);"><i class="bi bi-geo-alt"></i> ${sitioExt}</strong></td>
+          <td style="text-align:center;"><strong style="font-size:1rem; color:var(--accent-blue);">${contactos}</strong></td>
           <td>
             <strong>${t.titulo}</strong>
-            <div style="font-size:0.8rem; color:#475569;">${t.descripcion}</div>
+            <div style="font-size:0.8rem; color:var(--text-secondary);">${t.descripcion}</div>
           </td>
           <td style="text-align:center;"><span class="m-badge m-badge-${t.estado}">${t.estado.replace('_', ' ')}</span></td>
         `;
@@ -273,12 +273,12 @@ async function cargarVistaPreviaMail(bitacoraId = '') {
     const tbodyExtras = document.getElementById('tbody-tareas-extras');
     tbodyExtras.innerHTML = '';
     if (sec.tareas_extras.length === 0) {
-      tbodyExtras.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#64748b;">No hay tareas extras aplicadas</td></tr>';
+      tbodyExtras.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No hay tareas extras aplicadas</td></tr>';
     } else {
       sec.tareas_extras.forEach(t => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td><strong style="color:#2563eb;">${t.ticket}</strong></td>
+          <td><strong style="color:var(--accent-blue);">${t.ticket}</strong></td>
           <td><strong>${t.cliente}</strong></td>
           <td>${t.titulo}</td>
           <td>${t.descripcion}</td>
@@ -299,17 +299,17 @@ function renderSubtareasInline(tarea = {}) {
   
   if (subtareas.length === 0 && actuals.length === 0) return '';
   
-  let html = '<div style="margin-top:6px; padding-left:8px; border-left:2px solid #94a3b8; font-size:0.75rem; color:#475569;">';
+  let html = '<div style="margin-top:6px; padding-left:8px; border-left:2px solid var(--border-color); font-size:0.75rem; color:var(--text-secondary);">';
   
   if (actuals.length > 0) {
-    html += '<div style="font-weight:700; color:#0284c7; margin-bottom:2px;">Notas de Seguimiento:</div>';
+    html += '<div style="font-weight:700; color:var(--info); margin-bottom:2px;">Notas de Seguimiento:</div>';
     actuals.forEach(a => {
-      html += `<div style="margin-bottom:2px;">• <span style="color:#0f172a; font-weight:600;">[${a.operador_nombre || 'Operador'} - ${a.created_at || ''}]:</span> ${a.descripcion} ${a.estado ? '<span style="font-size:0.7rem; color:#0284c7;">(' + a.estado + ')</span>' : ''}</div>`;
+      html += `<div style="margin-bottom:2px;">• <span style="color:var(--text-primary); font-weight:600;">[${a.operador_nombre || 'Operador'} - ${a.created_at || ''}]:</span> ${a.descripcion} ${a.estado ? '<span style="font-size:0.7rem; color:var(--info);">(' + a.estado + ')</span>' : ''}</div>`;
     });
   }
 
   if (subtareas.length > 0) {
-    html += '<div style="font-weight:700; color:#7c3aed; margin-top:4px; margin-bottom:2px;">Subtareas Asignadas:</div>';
+    html += '<div style="font-weight:700; color:var(--primary); margin-top:4px; margin-bottom:2px;">Subtareas Asignadas:</div>';
     subtareas.forEach(s => {
       html += `<div style="margin-bottom:2px;">• <strong>${s.ticket}:</strong> ${s.titulo} [${s.estado}] ${s.descripcion ? '- ' + s.descripcion : ''}</div>`;
     });

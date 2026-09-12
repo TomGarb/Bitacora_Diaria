@@ -883,6 +883,27 @@ class TestBitacoraDOC(unittest.TestCase):
         self.assertIn(self.operador2.id, comp_equipo_ids)
         self.assertNotIn(self.operador.id, comp_equipo_ids)
 
+    def test_15_dark_mode_ui_and_persistence(self):
+        """Verifica que el botón de alternar tema (Dark Mode) y script de inicialización existan en las vistas principales"""
+        self.login_as(self.operador)
+        
+        # Test vista Dashboard
+        res_dash = self.client.get('/dashboard')
+        self.assertEqual(res_dash.status_code, 200)
+        html_dash = res_dash.get_data(as_text=True)
+        self.assertIn('id="btn-theme-toggle"', html_dash)
+        self.assertIn('id="theme-toggle-icon"', html_dash)
+        self.assertIn("localStorage.getItem('doc_theme')", html_dash)
+        self.assertIn('data-theme', html_dash)
+
+        # Test vista Tareas
+        res_tareas = self.client.get('/tareas')
+        self.assertEqual(res_tareas.status_code, 200)
+        html_tareas = res_tareas.get_data(as_text=True)
+        self.assertIn('id="btn-theme-toggle"', html_tareas)
+        self.assertIn('id="theme-toggle-icon"', html_tareas)
+
 if __name__ == '__main__':
     unittest.main()
+
 

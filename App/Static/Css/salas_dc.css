@@ -4,24 +4,37 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  background: rgba(15, 23, 42, 0.6);
+  background: var(--bg-surface);
   border: 1px solid var(--border-color);
-  padding: 0.6rem 0.85rem;
+  padding: 0.65rem 0.95rem;
   border-radius: var(--radius-sm);
   margin-bottom: 0.5rem;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
 }
 
 .sala-item-row:hover {
-  border-color: rgba(14, 165, 233, 0.4);
-  background: rgba(15, 23, 42, 0.85);
+  border-color: var(--primary);
+  background: var(--bg-surface-hover);
+  transform: translateX(2px);
+}
+
+[data-theme="dark"] .sala-item-row {
+  background: var(--bg-tertiary);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .sala-item-row:hover {
+  background: #1c263b;
+  border-color: var(--primary);
 }
 
 .sala-badge-idx {
   font-size: 0.75rem;
   font-weight: 700;
   color: var(--primary);
-  background: rgba(14, 165, 233, 0.15);
+  background: var(--primary-light);
+  border: 1px solid rgba(99, 88, 225, 0.25);
   padding: 0.2rem 0.5rem;
   border-radius: 4px;
   min-width: 28px;

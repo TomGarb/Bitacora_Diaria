@@ -241,3 +241,66 @@ function extractDynamicFields(container) {
   });
   return data;
 }
+
+// Sincronización del Buscador Global del Header (Estilo MINIMIA)
+document.addEventListener('DOMContentLoaded', () => {
+  initThemeToggle();
+
+  const globalSearch = document.getElementById('global-navbar-search');
+  if (!globalSearch) return;
+
+  const localSearch = document.getElementById('search-task');
+  if (localSearch) {
+    globalSearch.addEventListener('input', (e) => {
+      localSearch.value = e.target.value;
+      localSearch.dispatchEvent(new Event('input'));
+    });
+  } else {
+    globalSearch.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const query = encodeURIComponent(e.target.value.trim());
+        if (query) {
+          window.location.href = `/tareas?q=${query}`;
+        }
+      }
+    });
+  }
+});
+
+// Gestor de Modo Oscuro / Claro (Dark Mode Toggle)
+function initThemeToggle() {
+  const themeBtn = document.getElementById('btn-theme-toggle');
+  const icon = document.getElementById('theme-toggle-icon');
+
+  function updateThemeUI(theme) {
+    if (!icon) return;
+    if (theme === 'dark') {
+      icon.className = 'bi bi-sun-fill';
+      if (themeBtn) {
+        themeBtn.title = 'Cambiar a modo claro';
+        themeBtn.setAttribute('aria-label', 'Cambiar a modo claro');
+      }
+    } else {
+      icon.className = 'bi bi-moon-stars-fill';
+      if (themeBtn) {
+        themeBtn.title = 'Cambiar a modo oscuro';
+        themeBtn.setAttribute('aria-label', 'Cambiar a modo oscuro');
+      }
+    }
+  }
+
+  const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+  updateThemeUI(currentTheme);
+
+  if (themeBtn) {
+    themeBtn.addEventListener('click', () => {
+      const activeTheme = document.documentElement.getAttribute('data-theme');
+      const nextTheme = activeTheme === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', nextTheme);
+      try {
+        localStorage.setItem('doc_theme', nextTheme);
+      } catch (e) {}
+      updateThemeUI(nextTheme);
+    });
+  }
+}
